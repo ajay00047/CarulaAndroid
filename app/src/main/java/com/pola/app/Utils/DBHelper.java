@@ -32,7 +32,7 @@ public class DBHelper extends SQLiteOpenHelper {
     public void onCreate(SQLiteDatabase database) {
 
         // create user table
-        String userQuery = "CREATE TABLE USERS ( user_id INTEGER PRIMARY KEY AUTOINCREMENT, first_name TEXT,last_name TEXT,mobile TEXT, dp_path TEXT, created_date TEXT, pass_key TEXT)";
+        String userQuery = "CREATE TABLE USERS ( user_id INTEGER PRIMARY KEY AUTOINCREMENT, first_name TEXT,last_name TEXT,mobile TEXT, dp_path TEXT, created_date TEXT, pass_key TEXT,iam TEXT)";
         database.execSQL(userQuery);
 
     }
@@ -64,7 +64,7 @@ public class DBHelper extends SQLiteOpenHelper {
         if(count == 1){
             bean = new UserBean();
 
-            String selectQuery = "SELECT user_id,first_name,last_name,mobile,dp_path,pass_key FROM users";
+            String selectQuery = "SELECT user_id,first_name,last_name,mobile,dp_path,pass_key,iam FROM users";
             Cursor cursor = database.rawQuery(selectQuery, null);
 
             if (cursor.moveToFirst()) {
@@ -75,7 +75,7 @@ public class DBHelper extends SQLiteOpenHelper {
                     bean.setMobile(cursor.getString(3));
                     bean.setDpPath(cursor.getString(4));
                     bean.setPassKey(cursor.getString(5));
-
+                    bean.setIam(cursor.getString(6));
                 } while (cursor.moveToNext());
             }
         }
@@ -98,6 +98,20 @@ public class DBHelper extends SQLiteOpenHelper {
         values.put("mobile", bean.getMobile());
         values.put("dp_path", bean.getDpPath());
         values.put("pass_key", bean.getPassKey());
+        database.insert("users", null, values);
+        database.close();
+    }
+
+    public void insertUser(UserBean bean){
+        SQLiteDatabase database = this.getWritableDatabase();
+
+        ContentValues values = new ContentValues();
+        values.put("first_name", bean.getFirstName());
+        values.put("last_name", bean.getLastName());
+        values.put("mobile", bean.getMobile());
+        values.put("dp_path", bean.getDpPath());
+        values.put("pass_key", bean.getPassKey());
+        values.put("iam", bean.getIam());
         database.insert("users", null, values);
         database.close();
     }

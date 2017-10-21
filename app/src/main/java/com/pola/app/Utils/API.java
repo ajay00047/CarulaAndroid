@@ -15,6 +15,10 @@ public class API {
     public final static String tripSetUpUrl = "/tripSetUp";
     public final static String carDetailsUrl = "/carDetails";
     public final static String getTripUrl = "/getTrip";
+    public final static String myTripUrl = "/myTrip";
+    public final static String requestTripUrl = "/requestTrip";
+    public final static String tripRequestsUrl = "/tripRequests";
+    public final static String changeTripStatusUrl = "/changeTripStatus";
 
     //google APIs
     public static final String GOOGLE_DIRECTION_API = "https://maps.googleapis.com/maps/api/directions/json?";

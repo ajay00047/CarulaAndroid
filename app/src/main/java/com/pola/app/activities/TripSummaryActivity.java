@@ -31,7 +31,7 @@ public class TripSummaryActivity extends AppCompatActivity {
     GenericResponseBean responseBean;
     private LinearLayout dateLayout, timeLayout, fareLayout, passengersLayout;
     private TextView date, from, time, to, fare, passengers;
-    private Button submit, back;
+    private Button submit;
     private ProgressDialog loader;
     private DBHelper dbHelper;
 
@@ -64,9 +64,8 @@ public class TripSummaryActivity extends AppCompatActivity {
             fare = (TextView) findViewById(R.id.fare);
             passengers = (TextView) findViewById(R.id.passengers);
             submit = (Button) findViewById(R.id.button_submit);
-            back = (Button) findViewById(R.id.button_back);
 
-            if (Singleton.isOwner) {
+            if (Singleton.userBean.getIam().equals("O")) {
                 passengersLayout.setVisibility(View.VISIBLE);
                 fareLayout.setVisibility(View.VISIBLE);
                 submit.setText("Submit");
@@ -93,7 +92,7 @@ public class TripSummaryActivity extends AppCompatActivity {
                     try {
                         loader.show();
                         requestBean.setTripDetailsBean(Singleton.tripDetailsBean);
-                        if (Singleton.isOwner) {
+                        if (Singleton.userBean.getIam().equals("O")) {
                             new TripSetUpUpTask().execute(null, null, null);
                         }else{
                             new GetTripListTask().execute(null, null, null);
@@ -105,16 +104,6 @@ public class TripSummaryActivity extends AppCompatActivity {
                 }
 
             });
-
-            back.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-
-                    finish();
-                }
-
-            });
-
 
         } catch (Exception e) {
             Log.e(Constants.LOG_TAG, "Fucked+++++++++++++++++++++++");
@@ -148,9 +137,11 @@ public class TripSummaryActivity extends AppCompatActivity {
 
                 Log.e(Constants.LOG_TAG, this.getClass() + " : " + "Error Code : " + ((GenericErrorResponseBean) responseBean.getDataBean()).getErrorCode());
 
-                if (((GenericErrorResponseBean) responseBean.getDataBean()).getErrorCode().equals(ErrorCodes.CODE_702)) {
+                if (((GenericErrorResponseBean) responseBean.getDataBean()).getErrorCode().equals(ErrorCodes.CODE_007)) {
                     Toast.makeText(TripSummaryActivity.this, ((GenericErrorResponseBean) responseBean.getDataBean()).errorMessage, Toast.LENGTH_LONG).show();
-
+                    Intent intent = new Intent(getApplicationContext(), MyTripActivity.class);
+                    startActivity(intent);
+                    finish();
                 } else
                     Toast.makeText(TripSummaryActivity.this, ((GenericErrorResponseBean) responseBean.getDataBean()).errorMessage, Toast.LENGTH_LONG).show();
             } else if (null != responseBean && responseBean.getStatus() == 0) {
@@ -198,7 +189,7 @@ public class TripSummaryActivity extends AppCompatActivity {
                 Log.e(Constants.LOG_TAG, this.getClass() + " : " + "Error Code : " + ((GenericErrorResponseBean) responseBean.getDataBean()).getErrorCode());
 
                 if (((GenericErrorResponseBean) responseBean.getDataBean()).getErrorCode().equals(ErrorCodes.CODE_201)) {
-                    Toast.makeText(TripSummaryActivity.this, ((GenericErrorResponseBean) responseBean.getDataBean()).errorMessage, Toast.LENGTH_LONG).show();
+                    Toast.makeText(TripSummaryActivity.this, ((GenericErrorResponseBean) responseBean.getDataBean()).errorMessage, Toast.LENGTH_SHORT).show();
 
                     Singleton.responseBean = responseBean;
 

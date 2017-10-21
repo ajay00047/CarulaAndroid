@@ -17,6 +17,7 @@ import com.pola.app.Utils.API;
 import com.pola.app.Utils.Constants;
 import com.pola.app.Utils.DBHelper;
 import com.pola.app.Utils.ErrorCodes;
+import com.pola.app.Utils.Singleton;
 import com.pola.app.beans.CarSetUpRequestBean;
 import com.pola.app.beans.GenericErrorResponseBean;
 import com.pola.app.beans.GenericResponseBean;
@@ -139,9 +140,11 @@ public class CarSetupActivity extends AppCompatActivity {
                        Log.e(Constants.LOG_TAG, this.getClass() + " : "+"Error Code : "+((GenericErrorResponseBean) responseBean.getDataBean()).getErrorCode());
 
                        if (((GenericErrorResponseBean) responseBean.getDataBean()).getErrorCode().equals(ErrorCodes.CODE_007)) {
-                           Toast.makeText(CarSetupActivity.this, ((GenericErrorResponseBean) responseBean.getDataBean()).errorMessage, Toast.LENGTH_LONG).show();
-
-                           Intent intent = new Intent(getApplicationContext(), MapActivity.class);
+                           Singleton.userBean.setIam("O");
+                           dbHelper.clearUsersTable();
+                           dbHelper.insertUser(Singleton.userBean);
+                           Toast.makeText(CarSetupActivity.this,"You are Owner now",Toast.LENGTH_SHORT).show();
+                           Intent intent = new Intent(getApplicationContext(), HomePageActivity.class);
                            startActivity(intent);
                            finish();
                        }

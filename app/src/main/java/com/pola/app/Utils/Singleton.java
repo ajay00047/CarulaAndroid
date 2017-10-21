@@ -14,9 +14,11 @@ public class Singleton {
     public static UserBean userBean = new UserBean();
     public static boolean isAvialable = false;
     public static boolean isOwner = false;
+    public static boolean rideNow=false;
     public static TripDetailsBean tripDetailsBean = new TripDetailsBean();
     public static Route route = new Route();
     public static GenericResponseBean responseBean;
+    public static GenericResponseBean responseBeanTrips;
 
     private Singleton() {
     }

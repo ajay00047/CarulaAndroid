@@ -44,6 +44,15 @@ public class LandingPageActivity extends AppCompatActivity {
         owner = (LinearLayout) findViewById(R.id.owner);
         passenger = (LinearLayout) findViewById(R.id.passenger);
 
+        //check for iam in SQLLite db
+        Singleton.userBean = dbHelper.getUserDetails();
+        if (null != Singleton.userBean && ("O".equals(Singleton.userBean.getIam()) || "P".equals(Singleton.userBean.getIam()))) {
+            Log.e(Constants.LOG_TAG, "User is : " + dbHelper.getUserDetails());
+            Intent intent = new Intent(getApplicationContext(), HomePageActivity.class);
+            startActivity(intent);
+            finish();
+        }
+
         owner.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -54,7 +63,7 @@ public class LandingPageActivity extends AppCompatActivity {
                 try {
                     loader.show();
                     new CarSetUpTask().execute(null, null, null);
-                    Singleton.isOwner = true;
+
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -66,13 +75,14 @@ public class LandingPageActivity extends AppCompatActivity {
         passenger.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Singleton.isOwner = false;
-                Intent intent = new Intent(getApplicationContext(), TripDetailsActivity.class);
+                Singleton.userBean.setIam("P");
+                dbHelper.clearUsersTable();
+                dbHelper.insertUser(Singleton.userBean);
+                Intent intent = new Intent(getApplicationContext(), HomePageActivity.class);
                 startActivity(intent);
 
             }
         });
-
 
 
     }
@@ -106,7 +116,10 @@ public class LandingPageActivity extends AppCompatActivity {
                     Intent intent = new Intent(getApplicationContext(), CarSetupActivity.class);
                     startActivity(intent);
                 } else {
-                    Intent intent = new Intent(getApplicationContext(), TripDetailsActivity.class);
+                    Singleton.userBean.setIam("O");
+                    dbHelper.clearUsersTable();
+                    dbHelper.insertUser(Singleton.userBean);
+                    Intent intent = new Intent(getApplicationContext(), HomePageActivity.class);
                     startActivity(intent);
                 }
             } else if (null != responseBean && responseBean.getStatus() == 0) {
@@ -127,8 +140,9 @@ public class LandingPageActivity extends AppCompatActivity {
             }
         }
 
-    };
+    }
 
+    ;
 
 
 }

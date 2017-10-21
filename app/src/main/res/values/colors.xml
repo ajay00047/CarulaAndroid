@@ -29,4 +29,10 @@
     <color name="Pink_800">#ffad1457</color>
     <color name="Red_700">#ffc53929</color>
     <color name="Red_800">#ffb93221</color>
+
+    <color name="Intro1">#3593FF</color>
+    <color name="Intro2">#CA72F7</color>
+    <color name="Intro3">#23D0BE</color>
+    <color name="Intro4">#F64B75</color>
+
 </resources>

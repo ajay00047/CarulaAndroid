@@ -10,6 +10,15 @@ public class UserBean {
     private String mobile;
     private String dpPath;
     private String passKey;
+    private String iam;
+
+    public String getIam() {
+        return iam;
+    }
+
+    public void setIam(String iam) {
+        this.iam = iam;
+    }
 
     public int getUserId() {
         return userId;

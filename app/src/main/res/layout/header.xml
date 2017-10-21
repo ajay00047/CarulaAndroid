@@ -1,25 +1,25 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="50dp"
     android:orientation="horizontal"
-    android:background="@drawable/header_background"
+    android:background="@color/Teal_800"
     android:id="@+id/header"
-    android:layout_alignParentTop="true">
+    android:layout_alignParentTop="true"
+    android:gravity="center">
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="30dp"
         android:text="@string/app_name"
-        android:layout_gravity="left"
-        android:textSize="30dp"/>
+        android:gravity="center"
+        android:textSize="22dp" />
 
     <!-- Dummy item to prevent AutoCompleteTextView from receiving focus -->
     <LinearLayout
         android:focusable="true"
         android:focusableInTouchMode="true"
         android:layout_width="0px"
-        android:layout_height="0px"/>
+        android:layout_height="0px" />
 
-    </RelativeLayout>
+</RelativeLayout>
 

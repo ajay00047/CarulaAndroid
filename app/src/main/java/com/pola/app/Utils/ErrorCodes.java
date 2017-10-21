@@ -99,8 +99,19 @@ public enum ErrorCodes {
         public String getErrorMessage() {
             return "Your trip time overlaps with another trip!. Please select another timings.";
         }
-    }
+    },
 
+    CODE_709 {
+        public String getErrorMessage() {
+            return "No seats remaining on this trip.";
+        }
+    },
+
+    CODE_710 {
+        public String getErrorMessage() {
+            return "Already requested.";
+        }
+    }
 
     ;
 

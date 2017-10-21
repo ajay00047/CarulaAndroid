@@ -7,6 +7,8 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.CALL_PHONE"/>
+    <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
 
     <application
         android:allowBackup="true"
@@ -33,6 +35,10 @@
         <activity android:name=".activities.TripSummaryActivity" />
         <activity android:name=".activities.MapActivity" />
         <activity android:name=".activities.TripsSearchActivity" />
+        <activity android:name=".activities.HomePageActivity" />
+        <activity android:name=".activities.MyTripActivity" />
+        <activity android:name=".activities.TripRequestsActivity" />
+        <activity android:name=".activities.SettingsActivity" />
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"

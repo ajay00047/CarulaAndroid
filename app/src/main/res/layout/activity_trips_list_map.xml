@@ -8,29 +8,6 @@
 
     <include layout="@layout/header" />
 
-    <LinearLayout
-        android:id="@+id/ownerDetails"
-        android:layout_width="wrap_content"
-        android:layout_height="70dp"
-        android:layout_below="@+id/header"
-        android:gravity="center">
-
-        <ImageView
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:src="@drawable/ic_distance" />
-
-        <TextView
-            android:id="@+id/ownerName"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="0 km"
-            android:textColor="@color/common_google_signin_btn_text_dark_pressed"
-            android:textSize="16dp"
-            android:textStyle="bold" />
-    </LinearLayout>
-
-
 
     <fragment xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:tools="http://schemas.android.com/tools"
@@ -38,114 +15,339 @@
         android:name="com.google.android.gms.maps.SupportMapFragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_above="@+id/commandsText"
-        android:layout_below="@+id/ownerDetails"
+        android:layout_above="@+id/footer"
+        android:layout_below="@+id/header"
         tools:context="com.example.mapwithmarker.MapsMarkerActivity" />
 
-    <LinearLayout
-        android:id="@+id/commandsText"
+    <android.support.v7.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:card_view="http://schemas.android.com/apk/res-auto"
+        android:id="@+id/card_view"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_above="@+id/commandsButton"
-        android:layout_alignParentBottom="true"
-        android:layout_marginBottom="100dp"
-        android:background="@color/Teal_700"
-        android:gravity="center"
-        android:orientation="horizontal"
-        android:padding="5dp"
-        android:weightSum="3">
-
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:gravity="center">
-
-            <ImageView
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:src="@drawable/ic_distance" />
-
-            <TextView
-                android:id="@+id/tvDistanceStart"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="0 km"
-                android:textColor="@color/common_google_signin_btn_text_dark_pressed"
-                android:textSize="16dp"
-                android:textStyle="bold" />
-        </LinearLayout>
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:gravity="center">
-
-            <ImageView
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:src="@drawable/ic_distance" />
-
-            <TextView
-                android:id="@+id/tvDistanceCar"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="0 km"
-                android:textColor="@color/common_google_signin_btn_text_dark_pressed"
-                android:textSize="16dp"
-                android:textStyle="bold" />
-        </LinearLayout>
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:gravity="center">
-
-            <ImageView
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:src="@drawable/ic_distance" />
-
-            <TextView
-                android:id="@+id/tvDistanceDrop"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="0 km"
-                android:textColor="@color/common_google_signin_btn_text_dark_pressed"
-                android:textSize="16dp"
-                android:textStyle="bold" />
-        </LinearLayout>
-
-    </LinearLayout>
-
-    <LinearLayout
-        android:id="@+id/commandsButton"
-        android:layout_width="match_parent"
-        android:layout_height="60dp"
         android:layout_above="@+id/footer"
-        android:layout_alignParentBottom="true"
-        android:layout_marginBottom="40dp"
-        android:background="@color/Teal_800"
-        android:orientation="horizontal"
-        android:padding="10dp">
+        android:layout_gravity="center"
+        android:layout_margin="10dp"
+        android:clickable="true"
+        card_view:cardCornerRadius="10dp">
 
-        <Button
-            android:id="@+id/btnFindPath"
+        <RelativeLayout
             android:layout_width="match_parent"
-            android:layout_height="46dp"
-            android:layout_marginLeft="30dp"
-            android:layout_marginRight="30dp"
-            android:text="Request" />
+            android:layout_height="match_parent">
 
-        <Button
-            android:id="@+id/next"
-            android:layout_width="match_parent"
-            android:layout_height="46dp"
-            android:layout_marginLeft="30dp"
-            android:layout_marginRight="30dp"
-            android:text="Next"
-            android:visibility="gone" />
-    </LinearLayout>
+            <LinearLayout
+                android:id="@+id/trip_count"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@+id/header"
+                android:background="@color/Teal_800"
+                android:gravity="center"
+                android:orientation="horizontal"
+                android:padding="5dp"
+                android:weightSum="3">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="left"
+                    android:layout_weight="1"
+                    android:gravity="center">
+
+                    <ImageView
+                        android:id="@+id/prev"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:src="@mipmap/prev_disabled" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center">
+
+                    <TextView
+                        android:id="@+id/trip_no_out_of"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="1/1"
+                        android:textColor="@color/common_google_signin_btn_text_dark_pressed"
+                        android:textSize="17dp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center">
+
+                    <ImageView
+                        android:id="@+id/next"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:src="@mipmap/next_disabled" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/commandsText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@color/Teal_700"
+                android:gravity="center"
+                android:orientation="horizontal"
+                android:layout_below="@+id/trip_count"
+                android:weightSum="3">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center">
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@mipmap/walking_man" />
+
+                    <TextView
+                        android:id="@+id/tvDistanceStart"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="5dp"
+                        android:text="0 km"
+                        android:textColor="@color/common_google_signin_btn_text_dark_pressed"
+                        android:textSize="12dp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center">
+
+                    <ImageView
+                        android:layout_width="50dp"
+                        android:layout_height="30dp"
+                        android:src="@mipmap/car_img" />
+
+                    <TextView
+                        android:id="@+id/tvDistanceCar"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="5dp"
+                        android:text="0 km"
+                        android:textColor="@color/common_google_signin_btn_text_dark_pressed"
+                        android:textSize="12dp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center">
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@mipmap/walking_man" />
+
+                    <TextView
+                        android:id="@+id/tvDistanceDrop"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="5dp"
+                        android:text="0 km"
+                        android:textColor="@color/common_google_signin_btn_text_dark_pressed"
+                        android:textSize="12dp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+            </LinearLayout>
+
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@+id/commandsText"
+                android:gravity="left"
+                android:orientation="horizontal">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="2"
+                    android:gravity="center"
+                    android:orientation="vertical">
+
+                    <ImageView
+                        android:layout_width="77dp"
+                        android:layout_height="77dp"
+                        android:src="@mipmap/calendar_1" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="7"
+                    android:gravity="left"
+                    android:orientation="vertical"
+                    android:padding="10dp">
+
+                    <TextView
+                        android:id="@+id/owner_name"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:text="Ajay Varma"
+                        android:textColor="@color/Teal_800"
+                        android:textSize="16dp"
+                        android:textStyle="bold" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="5dp">
+
+                        <ImageView
+                            android:layout_width="15dp"
+                            android:layout_height="15dp"
+                            android:src="@mipmap/car_start_icon" />
+
+                        <TextView
+                            android:id="@+id/start_from"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginLeft="5dp"
+                            android:ellipsize="end"
+                            android:maxLines="1"
+                            android:text="Waghbil Naka bus stop, Thane, Maharashtra, India"
+                            android:textSize="11dp" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/date_and_fare"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="5dp"
+                        android:weightSum="2">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1">
+
+                            <ImageView
+                                android:layout_width="15dp"
+                                android:layout_height="15dp"
+                                android:src="@mipmap/clock_icon" />
+
+                            <TextView
+                                android:id="@+id/start_time"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginLeft="5dp"
+                                android:ellipsize="end"
+                                android:maxLines="1"
+                                android:text="09:30 AM"
+                                android:textSize="11dp" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1">
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1">
+
+                                <ImageView
+                                    android:layout_width="15dp"
+                                    android:layout_height="15dp"
+                                    android:src="@mipmap/rs" />
+
+                                <TextView
+                                    android:id="@+id/fare"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginLeft="5dp"
+                                    android:text="777"
+                                    android:textColor="@color/colorMainBg"
+                                    android:textSize="12dp"
+                                    android:textStyle="bold" />
+                            </LinearLayout>
+                        </LinearLayout>
+                    </LinearLayout>
+                    <LinearLayout
+                        android:id="@+id/car_h"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="5dp">
+
+                        <ImageView
+                            android:layout_width="15dp"
+                            android:layout_height="15dp"
+                            android:src="@mipmap/car_img" />
+
+                        <TextView
+                            android:id="@+id/car_details"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginLeft="5dp"
+                            android:ellipsize="end"
+                            android:maxLines="1"
+                            android:text="Waghbil Naka bus stop, Thane, Maharashtra, India"
+                            android:textSize="11dp" />
+
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/request_h"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="5dp">
+
+                        <LinearLayout
+                            android:id="@+id/request"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="2"
+                            android:background="@drawable/border"
+                            android:gravity="center"
+                            android:padding="7dp"
+                            android:layout_margin="1dp">
+
+                            <TextView
+                                android:id="@+id/request_text"
+                                android:layout_width="match_parent"
+                                android:layout_height="20dp"
+                                android:shadowColor="@color/cardview_shadow_end_color"
+                                android:shadowDx="3"
+                                android:shadowDy="3"
+                                android:shadowRadius="2"
+                                android:text="REQUEST"
+                                android:textAlignment="center"
+                                android:textColor="#F16C50"
+                                android:textSize="16dp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </RelativeLayout>
+    </android.support.v7.widget.CardView>
 
     <include layout="@layout/footer" />
 </RelativeLayout>

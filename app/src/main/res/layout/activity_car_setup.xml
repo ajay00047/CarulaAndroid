@@ -1,14 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:ads="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/app_background"
     android:id="@+id/main_top"
     android:orientation="vertical">
 
-    <include layout="@layout/header"/>
+    <include layout="@layout/header" />
 
     <!-- SignUp progress -->
     <ProgressBar
@@ -19,12 +17,41 @@
         android:layout_marginBottom="8dp"
         android:visibility="gone" />
 
+    <LinearLayout
+        android:id="@+id/headerName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/header"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:padding="15dp">
+
+        <TextView
+            android:id="@+id/heading_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:text="Car Setup"
+            android:textColor="@color/textColor"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:visibility="visible" />
+    </LinearLayout>
+
+
+    <View
+        android:id="@+id/headerBorderBelow"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_below="@+id/headerName"
+        android:background="@android:color/darker_gray" />
+
     <ScrollView
         android:id="@+id/car_set_up_form"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:paddingTop="30dp"
-        android:layout_below="@+id/header">
+        android:padding="30dp"
+        android:layout_below="@+id/headerBorderBelow">
 
         <LinearLayout
             android:id="@+id/email_sign_up_form"
@@ -40,7 +67,7 @@
                     android:id="@+id/car_company"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Company"
+                    android:hint=" Car Company"
                     android:inputType="textPersonName"
                     android:maxLines="1"
                     android:textAllCaps="true"
@@ -56,7 +83,7 @@
                     android:id="@+id/car_model"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Model"
+                    android:hint="Car Model"
                     android:inputType="textPersonName"
                     android:maxLines="1"
                     android:textAllCaps="true"
@@ -88,7 +115,7 @@
                     android:id="@+id/car_no"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Car No"
+                    android:hint="Car Registration No"
                     android:inputType="text"
                     android:maxLines="1"
                     android:textAllCaps="true"
@@ -108,5 +135,5 @@
         </LinearLayout>
     </ScrollView>
 
-    <include layout="@layout/footer"/>
+    <include layout="@layout/footer" />
 </RelativeLayout>

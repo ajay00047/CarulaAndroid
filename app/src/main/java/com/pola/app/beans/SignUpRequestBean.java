@@ -14,6 +14,15 @@ public class SignUpRequestBean extends BaseRequestBean {
     private String firstName;
     private String lastName;
     private String mobile;
+    private boolean noSignUp;
+
+    public boolean getNoSignUp() {
+        return noSignUp;
+    }
+
+    public void setNoSignUp(boolean noSignUp) {
+        this.noSignUp = noSignUp;
+    }
 
     public String getFirstName() {
         return firstName;

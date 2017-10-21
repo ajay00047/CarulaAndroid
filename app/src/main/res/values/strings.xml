@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">POLA</string>
+    <string name="app_name">MY APP</string>
 
     <!-- Strings related to login -->
     <string name="first_name">First Name</string>
@@ -16,6 +16,9 @@
     <string name="button_back">Back</string>
     <string name="button_next">Next</string>
     <string name="button_resend_otp">Resend OTP</string>
+
+    <string name="prev">&lt;&lt;</string>
+    <string name="next">&gt;&gt;</string>
 
     <string name="main_page_intro">Seems like you are late to the Party!</string>
 

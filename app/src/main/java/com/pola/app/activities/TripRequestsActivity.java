@@ -1,7 +1,9 @@
 package com.pola.app.activities;
 
 import android.Manifest;
+import android.app.AlertDialog;
 import android.app.ProgressDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
@@ -12,6 +14,7 @@ import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.CardView;
 import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
@@ -38,6 +41,7 @@ import com.google.android.gms.maps.model.PolylineOptions;
 import com.pola.app.R;
 import com.pola.app.Utils.API;
 import com.pola.app.Utils.Constants;
+import com.pola.app.Utils.DBHelper;
 import com.pola.app.Utils.ErrorCodes;
 import com.pola.app.Utils.Singleton;
 import com.pola.app.Utils.StringUtil;
@@ -45,35 +49,37 @@ import com.pola.app.Utils.Utils;
 import com.pola.app.beans.GenericErrorResponseBean;
 import com.pola.app.beans.GenericResponseBean;
 import com.pola.app.beans.GetTripsResponseBean;
+import com.pola.app.beans.MyTripsRequestBean;
 import com.pola.app.beans.TripDetailsBean;
-import com.pola.app.beans.TripSetUpRequestBean;
+import com.pola.app.beans.TripStatusChangeRequestBean;
 import com.pola.app.services.HttpService;
 
 import java.util.Arrays;
 import java.util.List;
 
-public class TripsSearchActivity extends AppCompatActivity implements
+public class TripRequestsActivity extends AppCompatActivity implements
         GoogleApiClient.OnConnectionFailedListener,
         GoogleApiClient.ConnectionCallbacks, OnMapReadyCallback {
 
     public static final int MY_PERMISSIONS_REQUEST_LOCATION = 99;
     private static final String LOG_TAG = MapActivity.class.toString();
     private static final int GOOGLE_API_CLIENT_ID = 0;
-    private static final LatLngBounds BOUNDS_MOUNTAIN_VIEW = null;
     GenericResponseBean responseBean;
-    AsyncTask<Void, Void, Void> requestTripTask;
     private ProgressDialog loader;
     private GoogleApiClient mGoogleApiClient;
     private GoogleMap mMap;
     private List<TripDetailsBean> trips;
-    private TextView ownerName, distanceStart, distanceCar, distanceDrop, tripNoOutOf, startTime, startFrom, fare, request_text,carDetails;
+    private TextView ownerName, tripNoOutOf, startTime, startFrom, drop;
     private ImageView next, prev;
-    private LinearLayout request;
+    private LinearLayout reject, accept, call, accepted, cancel, rejected, noRequests;
     private int currentTrip = 0;
-    private TripSetUpRequestBean requestBean;
+    private TripStatusChangeRequestBean requestBeanStatusChange;
+    private MyTripsRequestBean requestBean;
+    private DBHelper dbHelper;
+    private CardView cardView;
 
     protected synchronized void buildGoogleApiClient() {
-        mGoogleApiClient = new GoogleApiClient.Builder(TripsSearchActivity.this)
+        mGoogleApiClient = new GoogleApiClient.Builder(TripRequestsActivity.this)
                 .addApi(Places.GEO_DATA_API)
                 .enableAutoManage(this, GOOGLE_API_CLIENT_ID, this)
                 .addConnectionCallbacks(this)
@@ -85,32 +91,40 @@ public class TripsSearchActivity extends AppCompatActivity implements
     protected void onCreate(Bundle savedInstanceState) {
         try {
             super.onCreate(savedInstanceState);
-            setContentView(R.layout.activity_trips_list_map);
+            setContentView(R.layout.activity_trip_requests);
 
-            requestBean = new TripSetUpRequestBean(getApplicationContext());
+            Bundle extras = getIntent().getExtras();
+
+            requestBeanStatusChange = new TripStatusChangeRequestBean(getApplicationContext());
+            requestBean = new MyTripsRequestBean(getApplicationContext());
+
+            requestBean.setTripId(Long.parseLong(extras.getString("tripId")));
+            //setup DBHelper
+            dbHelper = new DBHelper(this);
 
             ownerName = (TextView) findViewById(R.id.owner_name);
-            distanceStart = (TextView) findViewById(R.id.tvDistanceStart);
-            distanceCar = (TextView) findViewById(R.id.tvDistanceCar);
-            distanceDrop = (TextView) findViewById(R.id.tvDistanceDrop);
             tripNoOutOf = (TextView) findViewById(R.id.trip_no_out_of);
-            fare = (TextView) findViewById(R.id.fare);
+            drop = (TextView) findViewById(R.id.drop);
             startTime = (TextView) findViewById(R.id.start_time);
             startFrom = (TextView) findViewById(R.id.start_from);
-            request_text = (TextView) findViewById(R.id.request_text);
-            carDetails = (TextView) findViewById(R.id.car_details);
+            reject = (LinearLayout) findViewById(R.id.reject);
+            accept = (LinearLayout) findViewById(R.id.accept);
+            accepted = (LinearLayout) findViewById(R.id.accepted);
+            rejected = (LinearLayout) findViewById(R.id.rejected);
+            cancel = (LinearLayout) findViewById(R.id.cancel);
+            call = (LinearLayout) findViewById(R.id.call);
             prev = (ImageView) findViewById(R.id.prev);
-            request = (LinearLayout) findViewById(R.id.request);
             next = (ImageView) findViewById(R.id.next);
+            cardView = (CardView) findViewById(R.id.card_view);
+            noRequests = (LinearLayout) findViewById(R.id.no_requests);
 
-            loader = new ProgressDialog(TripsSearchActivity.this);
+            loader = new ProgressDialog(TripRequestsActivity.this);
             loader.setMessage("Moving satellites in position ...");
             loader.setIndeterminate(true);
             loader.setCancelable(false);
             loader.show();
-
             //check for permission
-            if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 checkLocationPermission();
             }
 
@@ -119,25 +133,6 @@ public class TripsSearchActivity extends AppCompatActivity implements
                     .findFragmentById(R.id.map);
             mapFragment.getMapAsync(this);
 
-            GenericResponseBean beanMain = Singleton.responseBean;
-            GetTripsResponseBean tripsBean = (GetTripsResponseBean) beanMain.getDataBean();
-
-            trips = tripsBean.getTrips();
-
-            //set up first trip details
-            ownerName.setText(trips.get(0).getFullName());
-            distanceStart.setText(StringUtil.convertM2Km(trips.get(0).getWalkDistanceStart()));
-            distanceCar.setText(StringUtil.convertM2Km(trips.get(0).getDistance()));
-            distanceDrop.setText(StringUtil.convertM2Km(trips.get(0).getWalkDistanceDrop()));
-            startTime.setText(StringUtil.getTimeFromDate(trips.get(0).getStartDateTime()));
-            startFrom.setText(trips.get(0).getStart());
-            fare.setText(trips.get(0).getFare() + "");
-            carDetails.setText(trips.get(0).getNo()+" - "+trips.get(0).getCompany()+" "+trips.get(0).getModel()+"("+trips.get(0).getColor()+")");
-
-            tripNoOutOf.setText((currentTrip + 1) + "/" + trips.size());
-
-            if (trips.size() > 1)
-                next.setImageResource(R.mipmap.next);
 
             //set listeners
             prev.setOnClickListener(new View.OnClickListener() {
@@ -149,13 +144,11 @@ public class TripsSearchActivity extends AppCompatActivity implements
 
                     --currentTrip;
                     ownerName.setText(trips.get(currentTrip).getFullName());
-                    distanceStart.setText(StringUtil.convertM2Km(trips.get(currentTrip).getWalkDistanceStart()));
-                    distanceCar.setText(StringUtil.convertM2Km(trips.get(currentTrip).getDistance()));
-                    distanceDrop.setText(StringUtil.convertM2Km(trips.get(currentTrip).getWalkDistanceDrop()));
-                    startTime.setText(StringUtil.getTimeFromDate(trips.get(currentTrip).getStartDateTime()));
-                    startFrom.setText(trips.get(currentTrip).getStart());
-                    fare.setText(trips.get(currentTrip).getFare() + "");
-                    carDetails.setText(trips.get(currentTrip).getNo()+" - "+trips.get(currentTrip).getCompany()+" "+trips.get(currentTrip).getModel()+"("+trips.get(currentTrip).getColor()+")");
+                    startTime.setText(StringUtil.convertSQLDate2Java(trips.get(currentTrip).getWalkStartDateTime()));
+                    startFrom.setText(trips.get(currentTrip).getWalkStartLoc());
+                    drop.setText(trips.get(currentTrip).getWalkDropLoc() + "");
+
+
                     tripNoOutOf.setText((currentTrip + 1) + "/" + trips.size());
 
                     populateTrip(currentTrip);
@@ -170,10 +163,25 @@ public class TripsSearchActivity extends AppCompatActivity implements
                     } else
                         prev.setImageResource(R.mipmap.prev);
 
-                    if ("PEN".equals(trips.get(currentTrip).getStatus()))
-                        request_text.setText("CALL");
-                    else
-                        request_text.setText("REQUEST");
+                    if ("ACP".equals(trips.get(currentTrip).getStatus())) {
+                        accepted.setVisibility(View.VISIBLE);
+                        rejected.setVisibility(View.GONE);
+                        reject.setVisibility(View.GONE);
+                        accept.setVisibility(View.GONE);
+                        call.setVisibility(View.VISIBLE);
+                    } else if ("REJ".equals(trips.get(currentTrip).getStatus())) {
+                        accepted.setVisibility(View.GONE);
+                        rejected.setVisibility(View.VISIBLE);
+                        reject.setVisibility(View.GONE);
+                        accept.setVisibility(View.GONE);
+                        call.setVisibility(View.GONE);
+                    } else {
+                        accepted.setVisibility(View.GONE);
+                        rejected.setVisibility(View.GONE);
+                        reject.setVisibility(View.VISIBLE);
+                        accept.setVisibility(View.VISIBLE);
+                        call.setVisibility(View.VISIBLE);
+                    }
                 }
             });
 
@@ -188,13 +196,9 @@ public class TripsSearchActivity extends AppCompatActivity implements
 
                     ++currentTrip;
                     ownerName.setText(trips.get(currentTrip).getFullName());
-                    distanceStart.setText(StringUtil.convertM2Km(trips.get(currentTrip).getWalkDistanceStart()));
-                    distanceCar.setText(StringUtil.convertM2Km(trips.get(currentTrip).getDistance()));
-                    distanceDrop.setText(StringUtil.convertM2Km(trips.get(currentTrip).getWalkDistanceDrop()));
-                    startTime.setText(StringUtil.getTimeFromDate(trips.get(currentTrip).getStartDateTime()));
-                    startFrom.setText(trips.get(currentTrip).getStart());
-                    fare.setText(trips.get(currentTrip).getFare() + "");
-                    carDetails.setText(trips.get(currentTrip).getNo()+" - "+trips.get(currentTrip).getCompany()+" "+trips.get(currentTrip).getModel()+"("+trips.get(currentTrip).getColor()+")");
+                    startTime.setText(StringUtil.convertSQLDate2Java(trips.get(currentTrip).getWalkStartDateTime()));
+                    startFrom.setText(trips.get(currentTrip).getWalkStartLoc());
+                    drop.setText(trips.get(currentTrip).getWalkDropLoc() + "");
 
                     tripNoOutOf.setText((currentTrip + 1) + "/" + trips.size());
 
@@ -210,37 +214,99 @@ public class TripsSearchActivity extends AppCompatActivity implements
                     } else
                         prev.setImageResource(R.mipmap.prev);
 
-                    if ("PEN".equals(trips.get(currentTrip).getStatus()))
-                        request_text.setText("CALL");
-                    else
-                        request_text.setText("REQUEST");
+                    if ("ACP".equals(trips.get(currentTrip).getStatus())) {
+                        accepted.setVisibility(View.VISIBLE);
+                        rejected.setVisibility(View.GONE);
+                        reject.setVisibility(View.GONE);
+                        accept.setVisibility(View.GONE);
+                        call.setVisibility(View.VISIBLE);
+                    } else if ("REJ".equals(trips.get(currentTrip).getStatus())) {
+                        accepted.setVisibility(View.GONE);
+                        rejected.setVisibility(View.VISIBLE);
+                        reject.setVisibility(View.GONE);
+                        accept.setVisibility(View.GONE);
+                        call.setVisibility(View.GONE);
+                    } else {
+                        accepted.setVisibility(View.GONE);
+                        rejected.setVisibility(View.GONE);
+                        reject.setVisibility(View.VISIBLE);
+                        accept.setVisibility(View.VISIBLE);
+                        call.setVisibility(View.VISIBLE);
+                    }
+
                 }
             });
 
-            request.setOnClickListener(new View.OnClickListener() {
+            reject.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
 
-                    if ("REQUEST".equals(request_text.getText())) {
-                        loader.setMessage("Processing request...");
-                        loader.show();
-                        requestBean.setTripDetailsBean(trips.get(currentTrip));
-                        Log.e(Constants.LOG_TAG, "Current Trip : " + currentTrip);
-                        new RequestTripTask().execute(null, null, null);
-                    } else if ("CALL".equals(request_text.getText())) {
-                        try {
-                            if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
-                                Toast.makeText(TripsSearchActivity.this,
-                                        "No Call Permission", Toast.LENGTH_SHORT).show();
-                            }
-                            String number = "tel:+91" + trips.get(currentTrip).getMobile();
-                            Intent callIntent = new Intent(Intent.ACTION_CALL, Uri.parse(number));
-                            startActivity(callIntent);
+                    loader.setMessage("Processing request...");
+                    loader.show();
+                    requestBeanStatusChange.setAction("7");
+                    requestBeanStatusChange.setTripId(trips.get(currentTrip).getTripId());
+                    requestBeanStatusChange.setTripRequestId(trips.get(currentTrip).getTripRequestId());
+                    requestBeanStatusChange.setStatus("REJ");
+                    Log.e(Constants.LOG_TAG, "Current Trip : " + currentTrip);
+                    new ChangeTripStatusTask().execute(null, null, null);
+                }
+            });
 
-                        } catch (android.content.ActivityNotFoundException ex) {
-                            Toast.makeText(TripsSearchActivity.this,
-                                    "Call failed, please try again later!", Toast.LENGTH_SHORT).show();
+            accept.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+
+                    loader.setMessage("Processing request...");
+                    loader.show();
+                    requestBeanStatusChange.setAction("7");
+                    requestBeanStatusChange.setTripId(trips.get(currentTrip).getTripId());
+                    requestBeanStatusChange.setTripRequestId(trips.get(currentTrip).getTripRequestId());
+                    requestBeanStatusChange.setStatus("ACP");
+                    Log.e(Constants.LOG_TAG, "Current Trip : " + currentTrip);
+                    new ChangeTripStatusTask().execute(null, null, null);
+                }
+            });
+
+            cancel.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+
+                    new AlertDialog.Builder(TripRequestsActivity.this)
+                            .setTitle("Cancel Ride")
+                            .setMessage("Do you really want to cancel this ride?")
+                            .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+
+                                public void onClick(DialogInterface dialog, int whichButton) {
+                                    loader.setMessage("Processing request...");
+                                    loader.show();
+                                    requestBeanStatusChange.setAction("77");
+                                    requestBeanStatusChange.setTripId(requestBean.getTripId());
+                                    requestBeanStatusChange.setStatus("CAN");
+                                    Log.e(Constants.LOG_TAG, "Current Trip : " + currentTrip);
+                                    new ChangeTripStatusTask().execute(null, null, null);
+                                }
+                            })
+                            .setNegativeButton(android.R.string.no, null).show();
+
+
+                }
+            });
+
+            call.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    try {
+                        if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
+                            Toast.makeText(TripRequestsActivity.this,
+                                    "No Call Permission", Toast.LENGTH_SHORT).show();
                         }
+                        String number = "tel:+91" + trips.get(currentTrip).getMobile();
+                        Intent callIntent = new Intent(Intent.ACTION_CALL, Uri.parse(number));
+                        startActivity(callIntent);
+
+                    } catch (android.content.ActivityNotFoundException ex) {
+                        Toast.makeText(TripRequestsActivity.this,
+                                "Call failed, please try again later!", Toast.LENGTH_SHORT).show();
                     }
                 }
             });
@@ -256,8 +322,11 @@ public class TripsSearchActivity extends AppCompatActivity implements
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
+        //load trip requests
+        new TripRequestsTask().execute(null, null, null);
+
         //Initialize Google Play Services
-        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (ContextCompat.checkSelfPermission(this,
                     Manifest.permission.ACCESS_FINE_LOCATION)
                     == PackageManager.PERMISSION_GRANTED) {
@@ -280,8 +349,6 @@ public class TripsSearchActivity extends AppCompatActivity implements
 
         mMap.setPadding(50, 160, 50, 700);
 
-        populateTrip(0);
-
     }
 
     ;
@@ -291,8 +358,9 @@ public class TripsSearchActivity extends AppCompatActivity implements
         loader.setMessage("Loading trip ...");
         loader.show();
 
+
         mMap.clear();
-        GenericResponseBean beanMain = Singleton.responseBean;
+        GenericResponseBean beanMain = Singleton.responseBeanTrips;
         GetTripsResponseBean tripsBean = (GetTripsResponseBean) beanMain.getDataBean();
         TripDetailsBean bean = tripsBean.getTrips().get(index);
 
@@ -331,7 +399,7 @@ public class TripsSearchActivity extends AppCompatActivity implements
             if (i == 0) {
                 mMap.addMarker(new MarkerOptions()
                         .icon(BitmapDescriptorFactory.fromResource(R.mipmap.walking_bag))
-                        .title("Your Origin")
+                        .title("Passenger Origin")
                         .position(new LatLng(pointsPassengerStart.get(i).latitude, pointsPassengerStart.get(i).longitude)));
                 builder.include(new LatLng(pointsPassengerStart.get(i).latitude, pointsPassengerStart.get(i).longitude));
             }
@@ -367,7 +435,7 @@ public class TripsSearchActivity extends AppCompatActivity implements
             if (i == 0) {
                 mMap.addMarker(new MarkerOptions()
                         .icon(BitmapDescriptorFactory.fromResource(R.mipmap.standing_bag))
-                        .title("Your Destination")
+                        .title("Passenger Destination")
                         .position(new LatLng(pointsPassengerDrop.get(i).latitude, pointsPassengerDrop.get(i).longitude)));
                 builder.include(new LatLng(pointsPassengerDrop.get(i).latitude, pointsPassengerDrop.get(i).longitude));
             }
@@ -384,6 +452,42 @@ public class TripsSearchActivity extends AppCompatActivity implements
         CameraUpdate cu = CameraUpdateFactory.newLatLngBounds(bounds, 0);
 
         mMap.animateCamera(cu);
+
+        trips = tripsBean.getTrips();
+
+        Log.e(Constants.LOG_TAG, "responseBeanTrips : " + trips.size());
+
+        //set up first trip details
+        ownerName.setText(trips.get(0).getFullName());
+        startTime.setText(StringUtil.convertSQLDate2Java(trips.get(0).getWalkStartDateTime()));
+        startFrom.setText(trips.get(currentTrip).getWalkStartLoc());
+        drop.setText(trips.get(currentTrip).getWalkDropLoc() + "");
+
+        tripNoOutOf.setText((currentTrip + 1) + "/" + trips.size());
+
+        if ("ACP".equals(trips.get(currentTrip).getStatus())) {
+            accepted.setVisibility(View.VISIBLE);
+            rejected.setVisibility(View.GONE);
+            reject.setVisibility(View.GONE);
+            accept.setVisibility(View.GONE);
+            call.setVisibility(View.VISIBLE);
+        } else if ("REJ".equals(trips.get(currentTrip).getStatus())) {
+            accepted.setVisibility(View.GONE);
+            rejected.setVisibility(View.VISIBLE);
+            reject.setVisibility(View.GONE);
+            accept.setVisibility(View.GONE);
+            call.setVisibility(View.GONE);
+        } else {
+            accepted.setVisibility(View.GONE);
+            rejected.setVisibility(View.GONE);
+            reject.setVisibility(View.VISIBLE);
+            accept.setVisibility(View.VISIBLE);
+            call.setVisibility(View.VISIBLE);
+        }
+
+        if (trips.size() > 1)
+            next.setImageResource(R.mipmap.next);
+
         loader.dismiss();
 
     }
@@ -482,16 +586,23 @@ public class TripsSearchActivity extends AppCompatActivity implements
         }
     }
 
+    @Override
+    public void onBackPressed() {
+        Intent intent = new Intent(getApplicationContext(), MyTripActivity.class);
+        startActivity(intent);
+        finish();
+    }
+
     /**
      * Call webservice and check for login
      */
-    private class RequestTripTask extends AsyncTask<Void, Void, Void> {
+    private class ChangeTripStatusTask extends AsyncTask<Void, Void, Void> {
 
         @Override
         protected Void doInBackground(Void... params) {
 
             try {
-                responseBean = HttpService.getResponse(API.requestTripUrl, requestBean, TripsSearchActivity.this);
+                responseBean = HttpService.getResponse(API.changeTripStatusUrl, requestBeanStatusChange, TripRequestsActivity.this);
                 loader.dismiss();
             } catch (Exception e) {
                 e.printStackTrace();
@@ -507,31 +618,107 @@ public class TripsSearchActivity extends AppCompatActivity implements
                 Log.e(Constants.LOG_TAG, this.getClass() + " : " + "Error Code : " + ((GenericErrorResponseBean) responseBean.getDataBean()).getErrorCode());
 
                 if (((GenericErrorResponseBean) responseBean.getDataBean()).getErrorCode().equals(ErrorCodes.CODE_007)) {
-                    Toast.makeText(TripsSearchActivity.this, "Request Submitted", Toast.LENGTH_SHORT).show();
-                    trips.get(currentTrip).setStatus("PEN");
-                    request_text.setText("CALL");
+
+                    if (requestBeanStatusChange.getAction().equals("77") && requestBeanStatusChange.getStatus().equals("CAN")) {
+                        Toast.makeText(TripRequestsActivity.this, "Ride Cancelled", Toast.LENGTH_SHORT).show();
+                        Intent intent = new Intent(getApplicationContext(), MyTripActivity.class);
+                        startActivity(intent);
+                        finish();
+                    } else if (requestBeanStatusChange.getAction().equals("7") && requestBeanStatusChange.getStatus().equals("REJ")) {
+                        trips.get(currentTrip).setStatus("REJ");
+                        reject.setVisibility(View.GONE);
+                        accept.setVisibility(View.GONE);
+                        call.setVisibility(View.GONE);
+                        accepted.setVisibility(View.GONE);
+                        rejected.setVisibility(View.VISIBLE);
+                    } else if (requestBeanStatusChange.getAction().equals("7") && requestBeanStatusChange.getStatus().equals("ACP")) {
+                        trips.get(currentTrip).setStatus("ACP");
+                        reject.setVisibility(View.GONE);
+                        accept.setVisibility(View.GONE);
+                        call.setVisibility(View.VISIBLE);
+                        accepted.setVisibility(View.VISIBLE);
+                        rejected.setVisibility(View.GONE);
+                    }
 
                 } else {
-                    request_text.setVisibility(View.GONE);
-                    Toast.makeText(TripsSearchActivity.this, ((GenericErrorResponseBean) responseBean.getDataBean()).errorMessage, Toast.LENGTH_LONG).show();
+                    //request_text.setVisibility(View.GONE);
+                    Toast.makeText(TripRequestsActivity.this, ((GenericErrorResponseBean) responseBean.getDataBean()).errorMessage, Toast.LENGTH_LONG).show();
                 }
             } else if (null != responseBean && responseBean.getStatus() == 0) {
                 if (responseBean.getErrorCode().equals(ErrorCodes.CODE_888.toString())) {
-                    Toast.makeText(TripsSearchActivity.this, ErrorCodes.CODE_888.getErrorMessage(), Toast.LENGTH_LONG).show();
+                    Toast.makeText(TripRequestsActivity.this, ErrorCodes.CODE_888.getErrorMessage(), Toast.LENGTH_LONG).show();
 
 
                     Intent intent = new Intent(getApplicationContext(), MainActivity.class);
                     startActivity(intent);
                     finish();
                 } else
-                    Toast.makeText(TripsSearchActivity.this, responseBean.getErrorDescription(), Toast.LENGTH_LONG).show();
+                    Toast.makeText(TripRequestsActivity.this, responseBean.getErrorDescription(), Toast.LENGTH_LONG).show();
             } else {
-                Toast.makeText(TripsSearchActivity.this, "Unable to process request!", Toast.LENGTH_LONG).show();
+                Toast.makeText(TripRequestsActivity.this, "Unable to process request!", Toast.LENGTH_LONG).show();
                 Log.e(Constants.LOG_TAG, this.getClass() + " : " + "ResponseBean " + responseBean);
             }
         }
 
     }
 
+    /**
+     * Call webservice and check for login
+     */
+    private class TripRequestsTask extends AsyncTask<Void, Void, Void> {
+
+        @Override
+        protected Void doInBackground(Void... params) {
+
+            try {
+                responseBean = HttpService.getResponse(API.tripRequestsUrl, requestBean, TripRequestsActivity.this);
+                loader.dismiss();
+            } catch (Exception e) {
+                e.printStackTrace();
+                loader.dismiss();
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void result) {
+            if (null != responseBean && responseBean.getStatus() == 1) {
+
+                Log.e(Constants.LOG_TAG, this.getClass() + " : " + "Error Code : " + ((GenericErrorResponseBean) responseBean.getDataBean()).getErrorCode());
+
+                if (((GenericErrorResponseBean) responseBean.getDataBean()).getErrorCode().equals(ErrorCodes.CODE_201)) {
+
+                    Singleton.responseBeanTrips = responseBean;
+
+                    populateTrip(0);
+                    cardView.setVisibility(View.VISIBLE);
+                    noRequests.setVisibility(View.GONE);
+
+                } else {
+                    cardView.setVisibility(View.GONE);
+                    noRequests.setVisibility(View.VISIBLE);
+                }
+            } else if (null != responseBean && responseBean.getStatus() == 0) {
+                if (responseBean.getErrorCode().equals(ErrorCodes.CODE_888.toString())) {
+                    Toast.makeText(TripRequestsActivity.this, ErrorCodes.CODE_888.getErrorMessage(), Toast.LENGTH_SHORT).show();
+
+                    //clear all database
+                    dbHelper.clearUsersTable();
+
+                    Intent intent = new Intent(getApplicationContext(), MainActivity.class);
+                    startActivity(intent);
+                    finish();
+                } else
+                    Toast.makeText(TripRequestsActivity.this, responseBean.getErrorDescription(), Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(TripRequestsActivity.this, "Unable to process request!", Toast.LENGTH_SHORT).show();
+                Log.e(Constants.LOG_TAG, this.getClass() + " : " + "ResponseBean " + responseBean);
+                finish();
+            }
+        }
+
+    }
 
 }
+
+

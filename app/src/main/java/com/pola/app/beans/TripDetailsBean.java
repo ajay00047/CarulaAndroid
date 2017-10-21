@@ -6,11 +6,17 @@ package com.pola.app.beans;
 public class TripDetailsBean {
 
 
+
+    private int tripRequestId;
+    private String tripSequenceId;
     private int tripId;
     private int tripUserId;
     private String startDateTime;
     private String dropDateTime;
+    private String walkStartDateTime;
+    private String meetingDateTime;
     private int remainingPassengers;
+    private int remainingRequests;
 
     private String date;
     private String time;
@@ -27,16 +33,157 @@ public class TripDetailsBean {
     private String overviewPolylines;
     private String walkPolylinesStart;
     private String walkPolylinesDrop;
+    private String walkStartLoc;
+    private String walkDropLoc;
     private int walkDistanceStart;
+    private double walkStartLat;
+    private double walkStartLong;
+    private double walkDropLat;
+    private double walkDropLong;
     private int walkDistanceDrop;
     private int walkDurationStart;
     private int walkDurationDrop;
+    private String status;
+
 
     //user details
     private String fullName;
     private String dp;
     private String mobile;
 
+    //car details
+    private String company;
+    private String model;
+    private String color;
+    private String no;
+
+    public String getModel() {
+        return model;
+    }
+
+    public void setModel(String model) {
+        this.model = model;
+    }
+
+    public String getCompany() {
+        return company;
+    }
+
+    public void setCompany(String company) {
+        this.company = company;
+    }
+
+    public String getColor() {
+        return color;
+    }
+
+    public void setColor(String color) {
+        this.color = color;
+    }
+
+    public String getNo() {
+        return no;
+    }
+
+    public void setNo(String no) {
+        this.no = no;
+    }
+
+    public int getRemainingRequests() {
+        return remainingRequests;
+    }
+
+    public void setRemainingRequests(int remainingRequests) {
+        this.remainingRequests = remainingRequests;
+    }
+
+    public String getWalkStartDateTime() {
+        return walkStartDateTime;
+    }
+
+    public void setWalkStartDateTime(String walkStartDateTime) {
+        this.walkStartDateTime = walkStartDateTime;
+    }
+
+    public int getTripRequestId() {
+        return tripRequestId;
+    }
+
+    public void setTripRequestId(int tripRequestId) {
+        this.tripRequestId = tripRequestId;
+    }
+
+    public String getTripSequenceId() {
+        return tripSequenceId;
+    }
+
+    public void setTripSequenceId(String tripSequenceId) {
+        this.tripSequenceId = tripSequenceId;
+    }
+
+    public String getMeetingDateTime() {
+        return meetingDateTime;
+    }
+
+    public void setMeetingDateTime(String meetingDateTime) {
+        this.meetingDateTime = meetingDateTime;
+    }
+
+    public String getWalkStartLoc() {
+        return walkStartLoc;
+    }
+
+    public void setWalkStartLoc(String walkStartLoc) {
+        this.walkStartLoc = walkStartLoc;
+    }
+
+    public String getWalkDropLoc() {
+        return walkDropLoc;
+    }
+
+    public void setWalkDropLoc(String walkDropLoc) {
+        this.walkDropLoc = walkDropLoc;
+    }
+
+    public double getWalkStartLat() {
+        return walkStartLat;
+    }
+
+    public void setWalkStartLat(double walkStartLat) {
+        this.walkStartLat = walkStartLat;
+    }
+
+    public double getWalkStartLong() {
+        return walkStartLong;
+    }
+
+    public void setWalkStartLong(double walkStartLong) {
+        this.walkStartLong = walkStartLong;
+    }
+
+    public double getWalkDropLat() {
+        return walkDropLat;
+    }
+
+    public void setWalkDropLat(double walkDropLat) {
+        this.walkDropLat = walkDropLat;
+    }
+
+    public double getWalkDropLong() {
+        return walkDropLong;
+    }
+
+    public void setWalkDropLong(double walkDropLong) {
+        this.walkDropLong = walkDropLong;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
 
     public int getWalkDistanceStart() {
         return walkDistanceStart;
@@ -256,4 +403,6 @@ public class TripDetailsBean {
 
 
 }
+
+
 

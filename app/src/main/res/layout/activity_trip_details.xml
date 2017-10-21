@@ -1,14 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:ads="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/app_background"
     android:id="@+id/main_top"
     android:orientation="vertical">
 
-    <include layout="@layout/header"/>
+    <include layout="@layout/header" />
 
     <!-- Login progress -->
     <ProgressBar
@@ -38,7 +36,7 @@
             android:textColor="@color/textColor"
             android:textSize="24sp"
             android:textStyle="bold"
-            android:visibility="visible"/>
+            android:visibility="visible" />
     </LinearLayout>
 
     <View
@@ -49,9 +47,11 @@
         android:background="@android:color/darker_gray" />
 
     <ScrollView
+        android:id="@+id/details_holder"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/headerBorderBelow">
+        android:layout_below="@+id/headerBorderBelow"
+        android:layout_above="@+id/buttons">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -180,18 +180,17 @@
                     android:numeric="integer"
                     android:layout_marginLeft="50dp"
                     android:layout_marginRight="20dp"
-                    android:maxLength="3"/>
-
+                    android:maxLength="3" />
 
 
             </LinearLayout>
-
 
 
         </LinearLayout>
     </ScrollView>
 
     <LinearLayout
+        android:id="@+id/buttons"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
@@ -211,9 +210,9 @@
             android:layout_marginTop="30dp"
             android:text="@string/button_next"
             android:textStyle="bold"
-            android:layout_weight="1"/>
+            android:layout_weight="1" />
 
     </LinearLayout>
 
-    <include layout="@layout/footer"/>
+    <include layout="@layout/footer" />
 </RelativeLayout>

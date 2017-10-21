@@ -54,7 +54,22 @@ public class TripDetailsActivity extends AppCompatActivity {
         fare = (EditText) findViewById(R.id.fare);
         next = (Button) findViewById(R.id.button_next);
 
-        if (Singleton.isOwner) {
+        if (Singleton.rideNow) {
+            dateLayout.setVisibility(View.GONE);
+            timeLayout.setVisibility(View.GONE);
+            Singleton.tripDetailsBean.setDate(StringUtil.getCurrentDate());
+            Singleton.tripDetailsBean.setTime(StringUtil.getCurrentPlusTime(5));
+            if(Singleton.userBean.getIam().equals("P")){
+                Intent intent = new Intent(getApplicationContext(), MapActivity.class);
+                startActivity(intent);
+                finish();
+            }
+        } else {
+            dateLayout.setVisibility(View.VISIBLE);
+            timeLayout.setVisibility(View.VISIBLE);
+        }
+
+        if (Singleton.userBean.getIam().equals("O")) {
             passengersLayout.setVisibility(View.VISIBLE);
             fareLayout.setVisibility(View.VISIBLE);
         } else {
@@ -118,7 +133,7 @@ public class TripDetailsActivity extends AppCompatActivity {
                                     @Override
                                     public void onClick(View v) {
 
-                                        if (Singleton.isOwner) {
+                                        if (Singleton.userBean.getIam().equals("O")) {
                                             if (Utils.isEmpty(fare)) {
                                                 Toast.makeText(TripDetailsActivity.this, "Fare cannot be blank or 0", Toast.LENGTH_SHORT).show();
                                             }else {
@@ -127,21 +142,27 @@ public class TripDetailsActivity extends AppCompatActivity {
                                             }
                                         }
 
-                                        if ("Select Date".equals(selectDate.getText())) {
+                                        if ("Select Date".equals(selectDate.getText()) && !Singleton.rideNow) {
                                             Toast.makeText(TripDetailsActivity.this, "Date not selected", Toast.LENGTH_SHORT).show();
-                                        } else if ("Select Time".equals(selectTime.getText())) {
+                                        } else if ("Select Time".equals(selectTime.getText()) && !Singleton.rideNow) {
                                             Toast.makeText(TripDetailsActivity.this, "Time not selected", Toast.LENGTH_SHORT).show();
                                         } else {
+                                            if(!Singleton.rideNow) {
 
-                                            if ( (StringUtil.convertDate2Epoch(selectDate.getText().toString() + " " + selectTime.getText().toString()) - StringUtil.currentEpoch())  > 3600) {
-                                                Singleton.tripDetailsBean.setDate(selectDate.getText().toString());
-                                                Singleton.tripDetailsBean.setTime(selectTime.getText().toString());
+                                                if ((StringUtil.convertDate2Epoch(selectDate.getText().toString() + " " + selectTime.getText().toString()) - StringUtil.currentEpoch()) > 0) {
+                                                    Singleton.tripDetailsBean.setDate(selectDate.getText().toString());
+                                                    Singleton.tripDetailsBean.setTime(selectTime.getText().toString());
 
+                                                    Intent intent = new Intent(getApplicationContext(), MapActivity.class);
+                                                    startActivity(intent);
+                                                } else {
+                                                    Toast.makeText(TripDetailsActivity.this, "Trip Timing cannot be less than current time!", Toast.LENGTH_SHORT).show();
+                                                }
+                                            }else{
                                                 Intent intent = new Intent(getApplicationContext(), MapActivity.class);
                                                 startActivity(intent);
-                                            } else {
-                                                Toast.makeText(TripDetailsActivity.this, "Trip Timing should be atleast 1 hour from current time!", Toast.LENGTH_SHORT).show();
                                             }
+
 
                                         }
                                     }

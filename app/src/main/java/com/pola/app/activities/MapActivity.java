@@ -13,16 +13,14 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
-
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -42,7 +40,6 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
-
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
@@ -63,9 +60,13 @@ import java.util.List;
 
 public class MapActivity extends AppCompatActivity implements
         GoogleApiClient.OnConnectionFailedListener,
-        GoogleApiClient.ConnectionCallbacks,OnMapReadyCallback,LocationListener,DirectionFinderListener {
+        GoogleApiClient.ConnectionCallbacks, OnMapReadyCallback, LocationListener, DirectionFinderListener {
+    public static final int MY_PERMISSIONS_REQUEST_LOCATION = 99;
     private static final String LOG_TAG = MapActivity.class.toString();
     private static final int GOOGLE_API_CLIENT_ID = 0;
+    private static final LatLngBounds BOUNDS_MOUNTAIN_VIEW = null;
+    AutocompleteFilter typeFilter = new AutocompleteFilter.Builder().
+            setTypeFilter(Place.TYPE_COUNTRY).setCountry("IN").build();
     private AutoCompleteTextView mStartAuotComplete;
     private AutoCompleteTextView mDropAuotComplete;
     private List<Marker> originMarkers = new ArrayList<>();
@@ -75,7 +76,6 @@ public class MapActivity extends AppCompatActivity implements
     private GoogleApiClient mGoogleApiClient;
     private PlaceArrayAdapter mPlaceStartArrayAdapter;
     private PlaceArrayAdapter mPlaceDropArrayAdapter;
-    private static final LatLngBounds BOUNDS_MOUNTAIN_VIEW = null;
     private ProgressDialog progressDialog;
     private Button btnFindPath;
     private Button btnNext;
@@ -85,17 +85,139 @@ public class MapActivity extends AppCompatActivity implements
     //private FusedLocationProviderClient mFusedLocationClient;
     private LocationServices lservice;
     private MarkerOptions myLocation;
-
     private TextView tvDistance;
     private TextView tvDuration;
     private LinearLayout commandsText;
     private LinearLayout commandsButton;
-
-    AutocompleteFilter typeFilter = new AutocompleteFilter.Builder().
-            setTypeFilter(Place.TYPE_COUNTRY).setCountry("IN").build();
-
-
     private GoogleMap mMap;
+    private boolean startLocSelected,dropLocSelected;
+
+    private ResultCallback<PlaceBuffer> mUpdateStartDetailsCallback
+            = new ResultCallback<PlaceBuffer>() {
+        @Override
+        public void onResult(PlaceBuffer places) {
+            if (!places.getStatus().isSuccess()) {
+                Log.e(LOG_TAG, "Place query did not complete. Error: " +
+                        places.getStatus().toString());
+                return;
+            }
+            // Selecting the first object buffer.
+            final Place place = places.get(0);
+
+            LatLng location = place.getLatLng();
+
+            //set singleton
+            Singleton.tripDetailsBean.setStartLat(location.latitude);
+            Singleton.tripDetailsBean.setStartLong(location.longitude);
+
+            if (!originMarkers.isEmpty()) {
+                for (Marker marker : originMarkers) {
+                    marker.remove();
+                }
+            }
+
+            if (!polylinePaths.isEmpty()) {
+                for (Polyline polyline : polylinePaths) {
+                    polyline.remove();
+                }
+            }
+
+            originMarkers.add(mMap.addMarker(new MarkerOptions()
+                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.start_blue))
+                    .title(place.getName().toString())
+                    .position(location).draggable(true).snippet(place.getAddress().toString())));
+
+            // Move the camera instantly to Sydney with a zoom of 15.
+            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(location, 10));
+            // Zoom in, animating the camera.
+            mMap.animateCamera(CameraUpdateFactory.zoomIn());
+            // Zoom out to zoom level 10, animating with a duration of 2 seconds.
+            mMap.animateCamera(CameraUpdateFactory.zoomTo(15), 500, null);
+
+            //hide next button
+            btnFindPath.setVisibility(View.VISIBLE);
+            btnNext.setVisibility(View.GONE);
+            commandsText.setVisibility(View.GONE);
+
+        }
+    };
+    private AdapterView.OnItemClickListener mAutocompleteStartClickListener
+            = new AdapterView.OnItemClickListener() {
+        @Override
+        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+            Utils.hideSoftKeyboard(MapActivity.this);
+            final PlaceArrayAdapter.PlaceAutocomplete item = mPlaceStartArrayAdapter.getItem(position);
+            final String placeId = String.valueOf(item.placeId);
+            Log.i(LOG_TAG, "Selected: " + item.description);
+            PendingResult<PlaceBuffer> placeResult = Places.GeoDataApi
+                    .getPlaceById(mGoogleApiClient, placeId);
+            placeResult.setResultCallback(mUpdateStartDetailsCallback);
+            startLocSelected=true;
+        }
+    };
+    private ResultCallback<PlaceBuffer> mUpdateDropDetailsCallback
+            = new ResultCallback<PlaceBuffer>() {
+        @Override
+        public void onResult(PlaceBuffer places) {
+            if (!places.getStatus().isSuccess()) {
+                Log.e(LOG_TAG, "Place query did not complete. Error: " +
+                        places.getStatus().toString());
+                return;
+            }
+            // Selecting the first object buffer.
+            final Place place = places.get(0);
+
+            LatLng location = place.getLatLng();
+
+            //set singleton
+            Singleton.tripDetailsBean.setDropLat(location.latitude);
+            Singleton.tripDetailsBean.setDropLong(location.longitude);
+
+            if (!destinationMarkers.isEmpty()) {
+                for (Marker marker : destinationMarkers) {
+                    marker.remove();
+                }
+            }
+
+            if (!polylinePaths.isEmpty()) {
+                for (Polyline polyline : polylinePaths) {
+                    polyline.remove();
+                }
+            }
+
+            destinationMarkers.add(mMap.addMarker(new MarkerOptions()
+                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.end_green))
+                    .title(place.getName().toString())
+                    .position(location).draggable(true).snippet(place.getAddress().toString())));
+
+            // Move the camera instantly to Sydney with a zoom of 15.
+            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(location, 10));
+            // Zoom in, animating the camera.
+            mMap.animateCamera(CameraUpdateFactory.zoomIn());
+            // Zoom out to zoom level 10, animating with a duration of 2 seconds.
+            mMap.animateCamera(CameraUpdateFactory.zoomTo(15), 500, null);
+
+            //hide next button
+            btnFindPath.setVisibility(View.VISIBLE);
+            btnNext.setVisibility(View.GONE);
+            commandsText.setVisibility(View.GONE);
+
+        }
+    };
+    private AdapterView.OnItemClickListener mAutocompleteDropClickListener
+            = new AdapterView.OnItemClickListener() {
+        @Override
+        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+            Utils.hideSoftKeyboard(MapActivity.this);
+            final PlaceArrayAdapter.PlaceAutocomplete item = mPlaceDropArrayAdapter.getItem(position);
+            final String placeId = String.valueOf(item.placeId);
+            Log.i(LOG_TAG, "Selected: " + item.description);
+            PendingResult<PlaceBuffer> placeResult = Places.GeoDataApi
+                    .getPlaceById(mGoogleApiClient, placeId);
+            placeResult.setResultCallback(mUpdateDropDetailsCallback);
+            dropLocSelected=true;
+        }
+    };
 
     protected synchronized void buildGoogleApiClient() {
         mGoogleApiClient = new GoogleApiClient.Builder(MapActivity.this)
@@ -127,17 +249,30 @@ public class MapActivity extends AppCompatActivity implements
         tvDuration = (TextView) findViewById(R.id.tvDuration);
         tvDistance = (TextView) findViewById(R.id.tvDistance);
 
-        commandsText=(LinearLayout) findViewById(R.id.commandsText);
-        commandsButton=(LinearLayout) findViewById(R.id.commandsButton);
+        commandsText = (LinearLayout) findViewById(R.id.commandsText);
+        commandsButton = (LinearLayout) findViewById(R.id.commandsButton);
 
         btnFindPath = (Button) findViewById(R.id.btnFindPath);
         btnNext = (Button) findViewById(R.id.next);
+
+        if (Singleton.userBean.getIam().equals("P"))
+            btnFindPath.setText("Next");
+
+        progressDialog = ProgressDialog.show(this, "Hang on",
+                "Moving satellites into position..!", true);
 
         //Start Location Autocomplete
         mStartAuotComplete = (AutoCompleteTextView) findViewById(R.id
                 .autoCompleteTextViewStart);
         mStartAuotComplete.setThreshold(3);
         mStartAuotComplete.setOnItemClickListener(mAutocompleteStartClickListener);
+/*        mStartAuotComplete.setOnKeyListener(new View.OnKeyListener() {
+            @Override
+            public boolean onKey(View v, int keyCode, KeyEvent event) {
+                startLocSelected=false;
+                return true;
+            }
+        });*/
         mPlaceStartArrayAdapter = new PlaceArrayAdapter(this, android.R.layout.simple_list_item_1,
                 BOUNDS_MOUNTAIN_VIEW, typeFilter);
         mStartAuotComplete.setAdapter(mPlaceStartArrayAdapter);
@@ -147,6 +282,13 @@ public class MapActivity extends AppCompatActivity implements
                 .autoCompleteTextViewDrop);
         mDropAuotComplete.setThreshold(3);
         mDropAuotComplete.setOnItemClickListener(mAutocompleteDropClickListener);
+/*        mDropAuotComplete.setOnKeyListener(new View.OnKeyListener() {
+            @Override
+            public boolean onKey(View v, int keyCode, KeyEvent event) {
+                dropLocSelected = false;
+                return true;
+            }
+        });*/
         mPlaceDropArrayAdapter = new PlaceArrayAdapter(this, android.R.layout.simple_list_item_1,
                 BOUNDS_MOUNTAIN_VIEW, typeFilter);
         mDropAuotComplete.setAdapter(mPlaceDropArrayAdapter);
@@ -154,15 +296,35 @@ public class MapActivity extends AppCompatActivity implements
         btnFindPath.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                sendRequest();
+                if (Singleton.userBean.getIam().equals("P")) {
+                    String origin = mStartAuotComplete.getText().toString();
+                    String destination = mDropAuotComplete.getText().toString();
+                    if (!startLocSelected) {
+                        Toast.makeText(getApplicationContext(), "Please enter start address!", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    if (!dropLocSelected) {
+                        Toast.makeText(getApplicationContext(), "Please enter drop address!", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    Singleton.tripDetailsBean.setStart(origin);
+                    Singleton.tripDetailsBean.setDrop(destination);
+                    Intent intent = new Intent(getApplicationContext(), TripSummaryActivity.class);
+                    startActivity(intent);
+                } else
+                    sendRequest();
             }
         });
 
         btnNext.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(getApplicationContext(),TripSummaryActivity.class);
-                startActivity(intent);
+                if (Singleton.tripDetailsBean.getDistance() < 3000) {
+                    Toast.makeText(getApplicationContext(), "Minimum Trip distance is 3 km.", Toast.LENGTH_SHORT).show();
+                } else {
+                    Intent intent = new Intent(getApplicationContext(), TripSummaryActivity.class);
+                    startActivity(intent);
+                }
             }
         });
     }
@@ -170,17 +332,17 @@ public class MapActivity extends AppCompatActivity implements
     private void sendRequest() {
         String origin = mStartAuotComplete.getText().toString();
         String destination = mDropAuotComplete.getText().toString();
-        if (origin.isEmpty() ) {
+        if (!startLocSelected) {
             Toast.makeText(this, "Please enter start address!", Toast.LENGTH_SHORT).show();
             return;
         }
-        if (destination.isEmpty() ) {
+        if (!dropLocSelected) {
             Toast.makeText(this, "Please enter drop address!", Toast.LENGTH_SHORT).show();
             return;
         }
 
         try {
-            new DirectionFinder(this, origin, destination,Singleton.tripDetailsBean.getDate()+" "+Singleton.tripDetailsBean.getTime(),this).execute();
+            new DirectionFinder(this, origin, destination, Singleton.tripDetailsBean.getDate() + " " + Singleton.tripDetailsBean.getTime(), this).execute();
 
             Singleton.tripDetailsBean.setStart(origin);
             Singleton.tripDetailsBean.setDrop(destination);
@@ -199,16 +361,13 @@ public class MapActivity extends AppCompatActivity implements
                     Manifest.permission.ACCESS_FINE_LOCATION)
                     == PackageManager.PERMISSION_GRANTED) {
                 buildGoogleApiClient();
-                mMap.setMyLocationEnabled(true);
             }
-        }
-        else {
+        } else {
             buildGoogleApiClient();
-            mMap.setMyLocationEnabled(true);
         }
 
 
-        LatLng loc = new LatLng(19.228825,72.854118);
+        LatLng loc = new LatLng(19.228825, 72.854118);
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(loc, 6));
 
         // Zoom in, animating the camera.
@@ -217,139 +376,10 @@ public class MapActivity extends AppCompatActivity implements
         // Zoom out to zoom level 10, animating with a duration of 2 seconds.
         mMap.animateCamera(CameraUpdateFactory.zoomTo(11), 2000, null);
 
-        mMap.setPadding(50,350,50,150);
+        mMap.setPadding(50, 350, 50, 150);
 
+        progressDialog.dismiss();
     }
-
-
-
-    private AdapterView.OnItemClickListener mAutocompleteStartClickListener
-            = new AdapterView.OnItemClickListener() {
-        @Override
-        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-            Utils.hideSoftKeyboard(MapActivity.this);
-            final PlaceArrayAdapter.PlaceAutocomplete item = mPlaceStartArrayAdapter.getItem(position);
-            final String placeId = String.valueOf(item.placeId);
-            Log.i(LOG_TAG, "Selected: " + item.description);
-            PendingResult<PlaceBuffer> placeResult = Places.GeoDataApi
-                    .getPlaceById(mGoogleApiClient, placeId);
-            placeResult.setResultCallback(mUpdateStartDetailsCallback);
-        }
-    };
-
-    private AdapterView.OnItemClickListener mAutocompleteDropClickListener
-            = new AdapterView.OnItemClickListener() {
-        @Override
-        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-            Utils.hideSoftKeyboard(MapActivity.this);
-            final PlaceArrayAdapter.PlaceAutocomplete item = mPlaceDropArrayAdapter.getItem(position);
-            final String placeId = String.valueOf(item.placeId);
-            Log.i(LOG_TAG, "Selected: " + item.description);
-            PendingResult<PlaceBuffer> placeResult = Places.GeoDataApi
-                    .getPlaceById(mGoogleApiClient, placeId);
-            placeResult.setResultCallback(mUpdateDropDetailsCallback);
-        }
-    };
-
-    private ResultCallback<PlaceBuffer> mUpdateStartDetailsCallback
-            = new ResultCallback<PlaceBuffer>() {
-        @Override
-        public void onResult(PlaceBuffer places) {
-            if (!places.getStatus().isSuccess()) {
-                Log.e(LOG_TAG, "Place query did not complete. Error: " +
-                        places.getStatus().toString());
-                return;
-            }
-            // Selecting the first object buffer.
-            final Place place = places.get(0);
-
-            LatLng location = place.getLatLng();
-
-            //set singleton
-            Singleton.tripDetailsBean.setStartLat(location.latitude);
-            Singleton.tripDetailsBean.setStartLong(location.longitude);
-
-            if (!originMarkers.isEmpty()) {
-                for (Marker marker : originMarkers) {
-                    marker.remove();
-                }
-            }
-
-            if (!polylinePaths.isEmpty()) {
-                for (Polyline polyline:polylinePaths ) {
-                    polyline.remove();
-                }
-            }
-
-            originMarkers.add(mMap.addMarker(new MarkerOptions()
-                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.start_blue))
-                    .title(place.getName().toString())
-                    .position(location).draggable(true).snippet(place.getAddress().toString())));
-
-            // Move the camera instantly to Sydney with a zoom of 15.
-            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(location, 10));
-            // Zoom in, animating the camera.
-            mMap.animateCamera(CameraUpdateFactory.zoomIn());
-            // Zoom out to zoom level 10, animating with a duration of 2 seconds.
-            mMap.animateCamera(CameraUpdateFactory.zoomTo(15), 500, null);
-
-            //hide next button
-            btnFindPath.setVisibility(View.VISIBLE);
-            btnNext.setVisibility(View.GONE);
-            commandsText.setVisibility(View.GONE);
-
-        }
-    };
-
-    private ResultCallback<PlaceBuffer> mUpdateDropDetailsCallback
-            = new ResultCallback<PlaceBuffer>() {
-        @Override
-        public void onResult(PlaceBuffer places) {
-            if (!places.getStatus().isSuccess()) {
-                Log.e(LOG_TAG, "Place query did not complete. Error: " +
-                        places.getStatus().toString());
-                return;
-            }
-            // Selecting the first object buffer.
-            final Place place = places.get(0);
-
-            LatLng location = place.getLatLng();
-
-            //set singleton
-            Singleton.tripDetailsBean.setDropLat(location.latitude);
-            Singleton.tripDetailsBean.setDropLong(location.longitude);
-
-            if (!destinationMarkers.isEmpty()) {
-                for (Marker marker : destinationMarkers) {
-                    marker.remove();
-                }
-            }
-
-            if (!polylinePaths.isEmpty()) {
-                for (Polyline polyline:polylinePaths ) {
-                    polyline.remove();
-                }
-            }
-
-            destinationMarkers.add(mMap.addMarker(new MarkerOptions()
-                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.end_green))
-                    .title(place.getName().toString())
-                    .position(location).draggable(true).snippet(place.getAddress().toString())));
-
-            // Move the camera instantly to Sydney with a zoom of 15.
-            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(location, 10));
-            // Zoom in, animating the camera.
-            mMap.animateCamera(CameraUpdateFactory.zoomIn());
-            // Zoom out to zoom level 10, animating with a duration of 2 seconds.
-            mMap.animateCamera(CameraUpdateFactory.zoomTo(15), 500, null);
-
-            //hide next button
-            btnFindPath.setVisibility(View.VISIBLE);
-            btnNext.setVisibility(View.GONE);
-            commandsText.setVisibility(View.GONE);
-
-        }
-    };
 
     @Override
     public void onConnected(Bundle bundle) {
@@ -380,7 +410,6 @@ public class MapActivity extends AppCompatActivity implements
                         connectionResult.getErrorCode(),
                 Toast.LENGTH_LONG).show();
     }
-
 
     @Override
     public void onConnectionSuspended(int i) {
@@ -422,7 +451,7 @@ public class MapActivity extends AppCompatActivity implements
                     .title(route.startAddress)
                     .position(route.startLocation)));
 
-            for (int i=0;i<route.wayPointAddresses.size();i++){
+            for (int i = 0; i < route.wayPointAddresses.size(); i++) {
                 String wayPointName = route.wayPointAddresses.get(i);
                 LatLng wayPointLatLng = route.wayPointLocations.get(i);
 
@@ -444,12 +473,12 @@ public class MapActivity extends AppCompatActivity implements
                     color(Color.BLACK).
                     width(13);
 
-            builder.include(originMarkers.get(originMarkers.size()-1).getPosition());
-            builder.include(destinationMarkers.get(destinationMarkers.size()-1).getPosition());
+            builder.include(originMarkers.get(originMarkers.size() - 1).getPosition());
+            builder.include(destinationMarkers.get(destinationMarkers.size() - 1).getPosition());
 
             LatLngBounds bounds = builder.build();
 
-            CameraUpdate cu = CameraUpdateFactory.newLatLngBounds(bounds,0);
+            CameraUpdate cu = CameraUpdateFactory.newLatLngBounds(bounds, 0);
 
             mMap.animateCamera(cu);
 
@@ -459,13 +488,12 @@ public class MapActivity extends AppCompatActivity implements
             polylinePaths.add(mMap.addPolyline(polylineOptions));
 
             Log.e(Constants.LOG_TAG, String.valueOf(PolyUtil.isLocationOnPath(new LatLng(19.176968, 72.943289), route.points, true, 500.0)));
-            Log.e(Constants.LOG_TAG,Singleton.getString());
+            Log.e(Constants.LOG_TAG, Singleton.getString());
 
         }
     }
 
-    public static final int MY_PERMISSIONS_REQUEST_LOCATION = 99;
-    public boolean checkLocationPermission(){
+    public boolean checkLocationPermission() {
         if (ContextCompat.checkSelfPermission(this,
                 Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
@@ -514,7 +542,6 @@ public class MapActivity extends AppCompatActivity implements
                         if (mGoogleApiClient == null) {
                             buildGoogleApiClient();
                         }
-                        mMap.setMyLocationEnabled(true);
                     }
 
                 } else {
@@ -529,6 +556,7 @@ public class MapActivity extends AppCompatActivity implements
             // You can add here other case statements according to your requirement.
         }
     }
+
     @Override
     public void onLocationChanged(Location location) {
 
@@ -566,5 +594,10 @@ public class MapActivity extends AppCompatActivity implements
     @Override
     public void onProviderDisabled(String provider) {
 
+    }
+
+    @Override
+    public void onBackPressed() {
+        finish();
     }
 }

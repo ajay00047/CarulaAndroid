@@ -9,7 +9,7 @@ import java.io.Serializable;
 /**
  * Created by Ajay on 05-Sep-17.
  */
-public class GenericResponseBean implements Serializable{
+public class GenericResponseBean implements Serializable {
 
     private static final long serialVersionUID = 1L;
     private int status;
@@ -26,7 +26,11 @@ public class GenericResponseBean implements Serializable{
             @JsonSubTypes.Type(value = GenericErrorResponseBean.class, name = "signUp"),
             @JsonSubTypes.Type(value = GenericErrorResponseBean.class, name = "carSetUp"),
             @JsonSubTypes.Type(value = GenericErrorResponseBean.class, name = "tripSetUp"),
+            @JsonSubTypes.Type(value = GenericErrorResponseBean.class, name = "requestTrip"),
+            @JsonSubTypes.Type(value = GenericErrorResponseBean.class, name = "changeTripStatus"),
+            @JsonSubTypes.Type(value = GetTripsResponseBean.class, name = "tripRequests"),
             @JsonSubTypes.Type(value = GetTripsResponseBean.class, name = "getTrip"),
+            @JsonSubTypes.Type(value = GetTripsResponseBean.class, name = "myTrip"),
             @JsonSubTypes.Type(value = CarDetailsResponseDataBean.class, name = "carDetails")})
     private DataBean dataBean;
 

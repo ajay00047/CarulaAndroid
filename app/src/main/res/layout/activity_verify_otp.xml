@@ -1,14 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:ads="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/app_background"
     android:id="@+id/main_top"
     android:orientation="vertical">
 
-    <include layout="@layout/header"/>
+    <include layout="@layout/header" />
 
     <ScrollView
         android:id="@+id/verify_otp_form"
@@ -59,5 +57,5 @@
         </LinearLayout>
     </ScrollView>
 
-    <include layout="@layout/footer"/>
+    <include layout="@layout/footer" />
 </RelativeLayout>
