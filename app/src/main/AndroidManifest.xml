@@ -39,6 +39,7 @@
         <activity android:name=".activities.MyTripActivity" />
         <activity android:name=".activities.TripRequestsActivity" />
         <activity android:name=".activities.SettingsActivity" />
+        <activity android:name=".activities.PermissionActivity" />
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"

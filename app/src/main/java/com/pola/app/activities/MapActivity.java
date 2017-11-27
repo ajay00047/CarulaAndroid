@@ -47,10 +47,12 @@ import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.maps.android.PolyUtil;
 import com.pola.app.R;
 import com.pola.app.Utils.Constants;
+import com.pola.app.Utils.DBHelper;
 import com.pola.app.Utils.DirectionFinder;
 import com.pola.app.Utils.Singleton;
 import com.pola.app.Utils.Utils;
 import com.pola.app.beans.Route;
+import com.pola.app.beans.UserBean;
 import com.pola.app.delegates.DirectionFinderListener;
 
 import java.io.UnsupportedEncodingException;
@@ -91,6 +93,8 @@ public class MapActivity extends AppCompatActivity implements
     private LinearLayout commandsButton;
     private GoogleMap mMap;
     private boolean startLocSelected,dropLocSelected;
+    private UserBean userBean;
+    private DBHelper dbHelper;
 
     private ResultCallback<PlaceBuffer> mUpdateStartDetailsCallback
             = new ResultCallback<PlaceBuffer>() {
@@ -233,10 +237,11 @@ public class MapActivity extends AppCompatActivity implements
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_map);
 
-        //check for permission
-        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            checkLocationPermission();
-        }
+
+        //setup DBHelper
+        dbHelper = new DBHelper(this);
+
+        userBean = dbHelper.getUserDetails();
 
         //mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
@@ -255,7 +260,7 @@ public class MapActivity extends AppCompatActivity implements
         btnFindPath = (Button) findViewById(R.id.btnFindPath);
         btnNext = (Button) findViewById(R.id.next);
 
-        if (Singleton.userBean.getIam().equals("P"))
+        if (userBean.getIam().equals("P"))
             btnFindPath.setText("Next");
 
         progressDialog = ProgressDialog.show(this, "Hang on",
@@ -296,7 +301,7 @@ public class MapActivity extends AppCompatActivity implements
         btnFindPath.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (Singleton.userBean.getIam().equals("P")) {
+                if (userBean.getIam().equals("P")) {
                     String origin = mStartAuotComplete.getText().toString();
                     String destination = mDropAuotComplete.getText().toString();
                     if (!startLocSelected) {
@@ -368,13 +373,13 @@ public class MapActivity extends AppCompatActivity implements
 
 
         LatLng loc = new LatLng(19.228825, 72.854118);
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(loc, 6));
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(loc, 10));
 
         // Zoom in, animating the camera.
         mMap.animateCamera(CameraUpdateFactory.zoomIn());
 
         // Zoom out to zoom level 10, animating with a duration of 2 seconds.
-        mMap.animateCamera(CameraUpdateFactory.zoomTo(11), 2000, null);
+        mMap.animateCamera(CameraUpdateFactory.zoomTo(15), 2000, null);
 
         mMap.setPadding(50, 350, 50, 150);
 
@@ -392,11 +397,7 @@ public class MapActivity extends AppCompatActivity implements
         mLocationRequest.setInterval(1000);
         mLocationRequest.setFastestInterval(1000);
         mLocationRequest.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
-        if (ContextCompat.checkSelfPermission(this,
-                Manifest.permission.ACCESS_FINE_LOCATION)
-                == PackageManager.PERMISSION_GRANTED) {
-            //LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient,mLocationRequest,this);
-        }
+
 
     }
 

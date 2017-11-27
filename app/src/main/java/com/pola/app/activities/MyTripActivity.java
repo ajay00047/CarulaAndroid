@@ -27,6 +27,7 @@ import com.pola.app.beans.GenericResponseBean;
 import com.pola.app.beans.GetTripsResponseBean;
 import com.pola.app.beans.MyTripsRequestBean;
 import com.pola.app.beans.TripDetailsBean;
+import com.pola.app.beans.UserBean;
 import com.pola.app.delegates.CustomItemClickListener;
 import com.pola.app.services.HttpService;
 
@@ -46,6 +47,7 @@ public class MyTripActivity extends AppCompatActivity {
     //beans
     private ProgressDialog loader;
     private DBHelper dbHelper;
+    private UserBean userBean;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,6 +61,7 @@ public class MyTripActivity extends AppCompatActivity {
 
         //setup DBHelper
         dbHelper = new DBHelper(this);
+        userBean = dbHelper.getUserDetails();
 
         loader = new ProgressDialog(MyTripActivity.this);
         loader.setMessage("Loading data...");
@@ -67,7 +70,7 @@ public class MyTripActivity extends AppCompatActivity {
 
         try {
             loader.show();
-            requestBean.setIam(Singleton.userBean.getIam());
+            requestBean.setIam(userBean.getIam());
             new MyTripsTask().execute(null, null, null);
 
 
@@ -94,14 +97,22 @@ public class MyTripActivity extends AppCompatActivity {
                 @Override
                 public void onItemClick(View v, int position) {
 
-                    if (!lstMyTrips.get(position).getStatus().equals("Cancelled") && Singleton.userBean.getIam().equals("O")) {
+                    if (!lstMyTrips.get(position).getStatus().equals("Cancelled") && userBean.getIam().equals("O")) {
                         Intent intent = new Intent(getApplicationContext(), TripRequestsActivity.class);
                         intent.putExtra("tripId",String.valueOf(lstMyTrips.get(position).getTripId()));
+                        intent.putExtra("tripStatus",String.valueOf(lstMyTrips.get(position).getStatus()));
+                        intent.putExtra("tripStart",String.valueOf(lstMyTrips.get(position).getStart()));
+                        intent.putExtra("tripStartLat",String.valueOf(lstMyTrips.get(position).getStartLat()));
+                        intent.putExtra("tripStartLong",String.valueOf(lstMyTrips.get(position).getStartLong()));
+                        intent.putExtra("tripDrop",String.valueOf(lstMyTrips.get(position).getDrop()));
+                        intent.putExtra("tripDropLat",String.valueOf(lstMyTrips.get(position).getDropLat()));
+                        intent.putExtra("tripDropLong",String.valueOf(lstMyTrips.get(position).getDropLong()));
+                        intent.putExtra("tripPolylines",String.valueOf(lstMyTrips.get(position).getOverviewPolylines()));
                         startActivity(intent);
                         finish();
                     }
 
-                    if (lstMyTrips.get(position).getStatus().equals("Requested") && Singleton.userBean.getIam().equals("P")) {
+                    if (lstMyTrips.get(position).getStatus().equals("Requested") && userBean.getIam().equals("P")) {
                         try {
                             if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
                                 Toast.makeText(MyTripActivity.this,
@@ -152,7 +163,7 @@ public class MyTripActivity extends AppCompatActivity {
                     populateTrips();
                 } else {
                     Toast.makeText(MyTripActivity.this, ((GenericErrorResponseBean) responseBean.getDataBean()).errorMessage, Toast.LENGTH_LONG).show();
-                    finish();
+
                 }
             } else if (null != responseBean && responseBean.getStatus() == 0) {
                 if (responseBean.getErrorCode().equals(ErrorCodes.CODE_888.toString())) {

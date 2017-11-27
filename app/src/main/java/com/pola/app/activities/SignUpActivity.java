@@ -28,7 +28,6 @@ import com.pola.app.services.HttpService;
  */
 public class SignUpActivity extends AppCompatActivity {
 
-    AsyncTask<Void, Void, Void> signUpTask;
     //beans
     SignUpRequestBean requestBean;
     GenericResponseBean responseBean;

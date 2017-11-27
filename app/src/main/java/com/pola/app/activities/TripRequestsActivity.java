@@ -77,6 +77,8 @@ public class TripRequestsActivity extends AppCompatActivity implements
     private MyTripsRequestBean requestBean;
     private DBHelper dbHelper;
     private CardView cardView;
+    private String tripStatus, tripStart, tripDrop, tripPolylines;
+    private double tripStartLat, tripStartLong, tripDropLat, tripDropLong;
 
     protected synchronized void buildGoogleApiClient() {
         mGoogleApiClient = new GoogleApiClient.Builder(TripRequestsActivity.this)
@@ -99,6 +101,16 @@ public class TripRequestsActivity extends AppCompatActivity implements
             requestBean = new MyTripsRequestBean(getApplicationContext());
 
             requestBean.setTripId(Long.parseLong(extras.getString("tripId")));
+            tripStatus = extras.getString("tripStatus");
+            tripStart = extras.getString("tripStart");
+            tripStartLat = Double.parseDouble(extras.getString("tripStartLat"));
+            tripStartLong = Double.parseDouble(extras.getString("tripStartLong"));
+            tripDrop = extras.getString("tripDrop");
+            tripDropLat = Double.parseDouble(extras.getString("tripDropLat"));
+            tripDropLong = Double.parseDouble(extras.getString("tripDropLong"));
+            tripPolylines = extras.getString("tripPolylines");
+
+
             //setup DBHelper
             dbHelper = new DBHelper(this);
 
@@ -133,6 +145,8 @@ public class TripRequestsActivity extends AppCompatActivity implements
                     .findFragmentById(R.id.map);
             mapFragment.getMapAsync(this);
 
+            if ("Completed".equals(tripStatus))
+                cancel.setVisibility(View.GONE);
 
             //set listeners
             prev.setOnClickListener(new View.OnClickListener() {
@@ -492,6 +506,48 @@ public class TripRequestsActivity extends AppCompatActivity implements
 
     }
 
+    private void populateOwnerTrip() {
+
+        loader.setMessage("Loading trip ...");
+        loader.show();
+
+
+        mMap.clear();
+
+        LatLngBounds.Builder builder = new LatLngBounds.Builder();
+
+        mMap.addMarker(new MarkerOptions()
+                .icon(BitmapDescriptorFactory.fromResource(R.mipmap.car_start_icon))
+                .title(tripStart)
+                .position(new LatLng(tripStartLat, tripStartLong)));
+
+        mMap.addMarker(new MarkerOptions()
+                .icon(BitmapDescriptorFactory.fromResource(R.mipmap.car_end_icon))
+                .title(tripDrop)
+                .position(new LatLng(tripDropLat, tripDropLong)));
+        PolylineOptions polylineOptionsOwner = new PolylineOptions().
+                geodesic(true).
+                color(Color.BLACK).
+                width(13);
+        List<LatLng> pointsOwner = Utils.decodePolyLine(tripPolylines);
+        for (int i = 0; i < pointsOwner.size(); i++)
+            polylineOptionsOwner.add(pointsOwner.get(i));
+        mMap.addPolyline(polylineOptionsOwner);
+
+        mMap.setPadding(50, 250, 50, 250);
+
+        //build the map
+        builder.include(new LatLng(tripStartLat, tripStartLong));
+        builder.include(new LatLng(tripDropLat, tripDropLong));
+        LatLngBounds bounds = builder.build();
+        CameraUpdate cu = CameraUpdateFactory.newLatLngBounds(bounds, 0);
+
+        mMap.animateCamera(cu);
+
+        loader.dismiss();
+
+    }
+
     @Override
     public void onConnected(Bundle bundle) {
 
@@ -693,10 +749,13 @@ public class TripRequestsActivity extends AppCompatActivity implements
                     populateTrip(0);
                     cardView.setVisibility(View.VISIBLE);
                     noRequests.setVisibility(View.GONE);
+                    mMap.setPadding(50, 160, 50, 700);
 
                 } else {
                     cardView.setVisibility(View.GONE);
                     noRequests.setVisibility(View.VISIBLE);
+                    populateOwnerTrip();
+                    mMap.setPadding(50, 250, 50, 200);
                 }
             } else if (null != responseBean && responseBean.getStatus() == 0) {
                 if (responseBean.getErrorCode().equals(ErrorCodes.CODE_888.toString())) {

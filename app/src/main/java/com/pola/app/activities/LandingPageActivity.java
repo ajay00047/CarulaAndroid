@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.CardView;
 import android.util.Log;
 import android.view.View;
 import android.widget.LinearLayout;
@@ -15,10 +16,10 @@ import com.pola.app.Utils.API;
 import com.pola.app.Utils.Constants;
 import com.pola.app.Utils.DBHelper;
 import com.pola.app.Utils.ErrorCodes;
-import com.pola.app.Utils.Singleton;
 import com.pola.app.beans.BaseRequestBean;
 import com.pola.app.beans.CarDetailsResponseDataBean;
 import com.pola.app.beans.GenericResponseBean;
+import com.pola.app.beans.UserBean;
 import com.pola.app.services.HttpService;
 
 public class LandingPageActivity extends AppCompatActivity {
@@ -26,9 +27,10 @@ public class LandingPageActivity extends AppCompatActivity {
     //beans
     BaseRequestBean requestBean;
     GenericResponseBean responseBean;
-    private LinearLayout owner, passenger;
+    private CardView owner, passenger;
     private DBHelper dbHelper;
     private ProgressDialog loader;
+    private UserBean userBean;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,14 +43,15 @@ public class LandingPageActivity extends AppCompatActivity {
         //setup DBHelper
         dbHelper = new DBHelper(this);
 
-        owner = (LinearLayout) findViewById(R.id.owner);
-        passenger = (LinearLayout) findViewById(R.id.passenger);
+        owner = (CardView) findViewById(R.id.owner);
+        passenger = (CardView) findViewById(R.id.passenger);
 
         //check for iam in SQLLite db
-        Singleton.userBean = dbHelper.getUserDetails();
-        if (null != Singleton.userBean && ("O".equals(Singleton.userBean.getIam()) || "P".equals(Singleton.userBean.getIam()))) {
+        userBean = dbHelper.getUserDetails();
+        if (null != userBean && ("O".equals(userBean.getIam()) || "P".equals(userBean.getIam()))) {
             Log.e(Constants.LOG_TAG, "User is : " + dbHelper.getUserDetails());
-            Intent intent = new Intent(getApplicationContext(), HomePageActivity.class);
+            Intent intent = new Intent(getApplicationContext(), PermissionActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(intent);
             finish();
         }
@@ -75,10 +78,10 @@ public class LandingPageActivity extends AppCompatActivity {
         passenger.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Singleton.userBean.setIam("P");
+                userBean.setIam("P");
                 dbHelper.clearUsersTable();
-                dbHelper.insertUser(Singleton.userBean);
-                Intent intent = new Intent(getApplicationContext(), HomePageActivity.class);
+                dbHelper.insertUser(userBean);
+                Intent intent = new Intent(getApplicationContext(), PermissionActivity.class);
                 startActivity(intent);
 
             }
@@ -114,13 +117,17 @@ public class LandingPageActivity extends AppCompatActivity {
                 if (((CarDetailsResponseDataBean) responseBean.getDataBean()).getErrorCode().equals(ErrorCodes.CODE_202)) {
 
                     Intent intent = new Intent(getApplicationContext(), CarSetupActivity.class);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
                     startActivity(intent);
+                    finish();
                 } else {
-                    Singleton.userBean.setIam("O");
+                    userBean.setIam("O");
                     dbHelper.clearUsersTable();
-                    dbHelper.insertUser(Singleton.userBean);
-                    Intent intent = new Intent(getApplicationContext(), HomePageActivity.class);
+                    dbHelper.insertUser(userBean);
+                    Intent intent = new Intent(getApplicationContext(), PermissionActivity.class);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
                     startActivity(intent);
+                    finish();
                 }
             } else if (null != responseBean && responseBean.getStatus() == 0) {
                 if (responseBean.getErrorCode().equals(ErrorCodes.CODE_888.toString())) {

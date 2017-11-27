@@ -22,6 +22,7 @@ import com.pola.app.Utils.Singleton;
 import com.pola.app.beans.GenericErrorResponseBean;
 import com.pola.app.beans.GenericResponseBean;
 import com.pola.app.beans.TripSetUpRequestBean;
+import com.pola.app.beans.UserBean;
 import com.pola.app.services.HttpService;
 
 public class TripSummaryActivity extends AppCompatActivity {
@@ -34,6 +35,7 @@ public class TripSummaryActivity extends AppCompatActivity {
     private Button submit;
     private ProgressDialog loader;
     private DBHelper dbHelper;
+    private UserBean userBean;
 
 
     @Override
@@ -47,6 +49,7 @@ public class TripSummaryActivity extends AppCompatActivity {
             requestBean = new TripSetUpRequestBean(getApplicationContext());
             //setup DBHelper
             dbHelper = new DBHelper(this);
+            userBean = dbHelper.getUserDetails();
 
             loader = new ProgressDialog(TripSummaryActivity.this);
             loader.setMessage("Submitting data...");
@@ -65,7 +68,7 @@ public class TripSummaryActivity extends AppCompatActivity {
             passengers = (TextView) findViewById(R.id.passengers);
             submit = (Button) findViewById(R.id.button_submit);
 
-            if (Singleton.userBean.getIam().equals("O")) {
+            if (userBean.getIam().equals("O")) {
                 passengersLayout.setVisibility(View.VISIBLE);
                 fareLayout.setVisibility(View.VISIBLE);
                 submit.setText("Submit");
@@ -92,7 +95,7 @@ public class TripSummaryActivity extends AppCompatActivity {
                     try {
                         loader.show();
                         requestBean.setTripDetailsBean(Singleton.tripDetailsBean);
-                        if (Singleton.userBean.getIam().equals("O")) {
+                        if (userBean.getIam().equals("O")) {
                             new TripSetUpUpTask().execute(null, null, null);
                         }else{
                             new GetTripListTask().execute(null, null, null);

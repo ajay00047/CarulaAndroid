@@ -1,7 +1,9 @@
 package com.pola.app.activities;
 
 import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
@@ -14,7 +16,7 @@ import android.widget.Toast;
 import com.pola.app.R;
 import com.pola.app.Utils.Constants;
 import com.pola.app.Utils.DBHelper;
-import com.pola.app.Utils.Singleton;
+import com.pola.app.beans.UserBean;
 
 public class HomePageActivity extends AppCompatActivity {
 
@@ -25,6 +27,7 @@ public class HomePageActivity extends AppCompatActivity {
     private DBHelper dbHelper;
     private CardView rideNow, rideLater, myTrips, settings;
     private TextView headerName;
+    private UserBean userBean;
 
 
     @Override
@@ -42,13 +45,14 @@ public class HomePageActivity extends AppCompatActivity {
 
             //setup DBHelper
             dbHelper = new DBHelper(this);
+            userBean = dbHelper.getUserDetails();
 
             loader = new ProgressDialog(HomePageActivity.this);
             loader.setMessage("Loading data...");
             loader.setIndeterminate(true);
             loader.setCancelable(false);
 
-            if (Singleton.userBean.getIam().equals("O"))
+            if (userBean.getIam().equals("O"))
                 headerName.setText("Owner Menu");
             else
                 headerName.setText("Passenger Menu");
@@ -58,8 +62,8 @@ public class HomePageActivity extends AppCompatActivity {
             rideNow.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    Singleton.rideNow = true;
                     Intent intent = new Intent(getApplicationContext(), TripDetailsActivity.class);
+                    intent.putExtra("rideNow","true");
                     startActivity(intent);
                 }
             });
@@ -67,8 +71,9 @@ public class HomePageActivity extends AppCompatActivity {
             rideLater.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    Singleton.rideNow = false;
+
                     Intent intent = new Intent(getApplicationContext(), TripDetailsActivity.class);
+                    intent.putExtra("rideNow","false");
                     startActivity(intent);
                 }
             });
@@ -85,12 +90,6 @@ public class HomePageActivity extends AppCompatActivity {
             settings.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    /*if (Singleton.userBean.getIam().equals("O"))
-                        Singleton.userBean.setIam("P");
-                    else
-                        Singleton.userBean.setIam("O");
-                    dbHelper.clearUsersTable();
-                    dbHelper.insertUser(Singleton.userBean);*/
                     Intent intent = new Intent(getApplicationContext(), SettingsActivity.class);
                     startActivity(intent);
                     finish();

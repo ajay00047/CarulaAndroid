@@ -21,6 +21,7 @@ import com.pola.app.Utils.Singleton;
 import com.pola.app.beans.CarSetUpRequestBean;
 import com.pola.app.beans.GenericErrorResponseBean;
 import com.pola.app.beans.GenericResponseBean;
+import com.pola.app.beans.UserBean;
 import com.pola.app.services.HttpService;
 
 /**
@@ -28,6 +29,14 @@ import com.pola.app.services.HttpService;
  */
 public class CarSetupActivity extends AppCompatActivity {
 
+    //beans
+    CarSetUpRequestBean requestBean;
+    GenericResponseBean responseBean;
+    //variables
+    String company = "";
+    String model = "";
+    String color = "";
+    String no = "";
     // UI references
     private EditText xmlCompany;
     private EditText xmlModel;
@@ -35,149 +44,138 @@ public class CarSetupActivity extends AppCompatActivity {
     private EditText xmlNo;
     private Button xmlNext;
     private ProgressDialog loader;
-    AsyncTask<Void, Void, Void> carSetUpTask;
-
-    //beans
-    CarSetUpRequestBean requestBean;
-    GenericResponseBean responseBean;
-
+    private UserBean userBean;
     //DB Helper
     private DBHelper dbHelper;
-
-    //variables
-    String company = "";
-    String model = "";
-    String color = "";
-    String no="";
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_car_setup);
-        try{
-        //Set up request bean
-        requestBean = new CarSetUpRequestBean(getApplicationContext());
+        try {
+            //Set up request bean
+            requestBean = new CarSetUpRequestBean(getApplicationContext());
 
             //DB helper
-            dbHelper=new DBHelper(this);
+            dbHelper = new DBHelper(this);
 
-        // Set up the login form.
-        xmlCompany = (EditText) findViewById(R.id.car_company);
-        xmlModel = (EditText) findViewById(R.id.car_model);
-        xmlColor = (EditText) findViewById(R.id.car_color);
-        xmlNo = (EditText) findViewById(R.id.car_no);
-        xmlNext = (Button) findViewById(R.id.button_next);
+            userBean = dbHelper.getUserDetails();
 
-            xmlCompany.setFilters(new InputFilter[] {new InputFilter.AllCaps()});
-            xmlModel.setFilters(new InputFilter[] {new InputFilter.AllCaps()});
-            xmlColor.setFilters(new InputFilter[] {new InputFilter.AllCaps()});
-            xmlNo.setFilters(new InputFilter[] {new InputFilter.AllCaps()});
+            // Set up the login form.
+            xmlCompany = (EditText) findViewById(R.id.car_company);
+            xmlModel = (EditText) findViewById(R.id.car_model);
+            xmlColor = (EditText) findViewById(R.id.car_color);
+            xmlNo = (EditText) findViewById(R.id.car_no);
+            xmlNext = (Button) findViewById(R.id.button_next);
 
-        //Listeners
-        xmlNext.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
+            xmlCompany.setFilters(new InputFilter[]{new InputFilter.AllCaps()});
+            xmlModel.setFilters(new InputFilter[]{new InputFilter.AllCaps()});
+            xmlColor.setFilters(new InputFilter[]{new InputFilter.AllCaps()});
+            xmlNo.setFilters(new InputFilter[]{new InputFilter.AllCaps()});
 
-                loader = new ProgressDialog(CarSetupActivity.this);
-                loader.setMessage("Submitting data...");
-                loader.setIndeterminate(true);
-                loader.setCancelable(false);
+            //Listeners
+            xmlNext.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
 
-                company = xmlCompany.getText().toString();
-                model = xmlModel.getText().toString();
-                color = xmlColor.getText().toString();
-                no = xmlNo.getText().toString();
+                    loader = new ProgressDialog(CarSetupActivity.this);
+                    loader.setMessage("Submitting data...");
+                    loader.setIndeterminate(true);
+                    loader.setCancelable(false);
 
-                if (!company.matches(Constants.REGEX_ALPHA)) {
-                    Toast.makeText(CarSetupActivity.this, "Only characters are allowed [A-Z] in Company field", Toast.LENGTH_LONG).show();
-                } else if (!model.matches(Constants.REGEX_ALPHANO)) {
-                    Toast.makeText(CarSetupActivity.this, "Only characters/numbers are allowed [A-Z] and [0-9] in Model field", Toast.LENGTH_LONG).show();
-                } else if (!color.matches(Constants.REGEX_ALPHA)) {
-                    Toast.makeText(CarSetupActivity.this, "Only characters are allowed [A-Z] in Color field", Toast.LENGTH_LONG).show();
-                } else if (!no.matches(Constants.REGEX_ALPHANO)) {
-                    Toast.makeText(CarSetupActivity.this, "Only characters/numbers are allowed [A-Z] and [0-9] in No filed", Toast.LENGTH_LONG).show();
-                }else {
-                    try {
-                        loader.show();
-                        requestBean.setCompany(company);
-                        requestBean.setModel(model);
-                        requestBean.setColor(color);
-                        requestBean.setNo(no);
+                    company = xmlCompany.getText().toString();
+                    model = xmlModel.getText().toString();
+                    color = xmlColor.getText().toString();
+                    no = xmlNo.getText().toString();
 
-                        carSetUpTask.execute(null, null, null);
-                    } catch (Exception e) {
-                        e.printStackTrace();
+                    if (!company.matches(Constants.REGEX_ALPHA)) {
+                        Toast.makeText(CarSetupActivity.this, "Only characters are allowed [A-Z] in Company field", Toast.LENGTH_LONG).show();
+                    } else if (!model.matches(Constants.REGEX_ALPHANO)) {
+                        Toast.makeText(CarSetupActivity.this, "Only characters/numbers are allowed [A-Z] and [0-9] in Model field", Toast.LENGTH_LONG).show();
+                    } else if (!color.matches(Constants.REGEX_ALPHA)) {
+                        Toast.makeText(CarSetupActivity.this, "Only characters are allowed [A-Z] in Color field", Toast.LENGTH_LONG).show();
+                    } else if (!no.matches(Constants.REGEX_ALPHANO)) {
+                        Toast.makeText(CarSetupActivity.this, "Only characters/numbers are allowed [A-Z] and [0-9] in No filed", Toast.LENGTH_LONG).show();
+                    } else {
+                        try {
+                            loader.show();
+                            requestBean.setCompany(company);
+                            requestBean.setModel(model);
+                            requestBean.setColor(color);
+                            requestBean.setNo(no);
+
+                            new CarSetUpTask().execute(null, null, null);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
                     }
+
                 }
+            });
 
-            }
-        });
 
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+
+    }
 
     /**
      * Call webservice and check for login
      */
-            carSetUpTask = new AsyncTask<Void, Void, Void>() {
+    private class CarSetUpTask extends AsyncTask<Void, Void, Void> {
 
-                @Override
-                protected Void doInBackground(Void... params) {
+        @Override
+        protected Void doInBackground(Void... params) {
 
-                    try {
-                        responseBean = HttpService.getResponse(API.carSetUpUrl,requestBean,CarSetupActivity.this);
-                        loader.dismiss();
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        loader.dismiss();
-                    }
-                    return null;
-                }
+            try {
+                responseBean = HttpService.getResponse(API.carSetUpUrl, requestBean, CarSetupActivity.this);
+                loader.dismiss();
+            } catch (Exception e) {
+                e.printStackTrace();
+                loader.dismiss();
+            }
+            return null;
+        }
 
-                @Override
-                protected void onPostExecute(Void result) {
-                   if(null != responseBean && responseBean.getStatus() ==1) {
+        @Override
+        protected void onPostExecute(Void result) {
+            if (null != responseBean && responseBean.getStatus() == 1) {
 
-                       Log.e(Constants.LOG_TAG, this.getClass() + " : "+"Error Code : "+((GenericErrorResponseBean) responseBean.getDataBean()).getErrorCode());
+                Log.e(Constants.LOG_TAG, this.getClass() + " : " + "Error Code : " + ((GenericErrorResponseBean) responseBean.getDataBean()).getErrorCode());
 
-                       if (((GenericErrorResponseBean) responseBean.getDataBean()).getErrorCode().equals(ErrorCodes.CODE_007)) {
-                           Singleton.userBean.setIam("O");
-                           dbHelper.clearUsersTable();
-                           dbHelper.insertUser(Singleton.userBean);
-                           Toast.makeText(CarSetupActivity.this,"You are Owner now",Toast.LENGTH_SHORT).show();
-                           Intent intent = new Intent(getApplicationContext(), HomePageActivity.class);
-                           startActivity(intent);
-                           finish();
-                       }
-                       else
-                           Toast.makeText(CarSetupActivity.this, ((GenericErrorResponseBean) responseBean.getDataBean()).errorMessage, Toast.LENGTH_LONG).show();
-                   }else if(null != responseBean && responseBean.getStatus() ==0) {
-                       if (responseBean.getErrorCode().equals(ErrorCodes.CODE_888.toString())) {
-                           Toast.makeText(CarSetupActivity.this,ErrorCodes.CODE_888.getErrorMessage(), Toast.LENGTH_LONG).show();
+                if (((GenericErrorResponseBean) responseBean.getDataBean()).getErrorCode().equals(ErrorCodes.CODE_007)) {
+                    userBean.setIam("O");
+                    dbHelper.clearUsersTable();
+                    dbHelper.insertUser(userBean);
+                    Toast.makeText(CarSetupActivity.this, "You are Owner now", Toast.LENGTH_SHORT).show();
+                    Intent intent = new Intent(getApplicationContext(), HomePageActivity.class);
+                    startActivity(intent);
+                    finish();
+                } else
+                    Toast.makeText(CarSetupActivity.this, ((GenericErrorResponseBean) responseBean.getDataBean()).errorMessage, Toast.LENGTH_LONG).show();
+            } else if (null != responseBean && responseBean.getStatus() == 0) {
+                if (responseBean.getErrorCode().equals(ErrorCodes.CODE_888.toString())) {
+                    Toast.makeText(CarSetupActivity.this, ErrorCodes.CODE_888.getErrorMessage(), Toast.LENGTH_LONG).show();
 
-                           //clear all database
-                           dbHelper.clearUsersTable();
+                    //clear all database
+                    dbHelper.clearUsersTable();
 
-                           Intent intent = new Intent(getApplicationContext(), MainActivity.class);
-                           startActivity(intent);
-                           finish();
-                       }else
-                           Toast.makeText(CarSetupActivity.this, responseBean.getErrorDescription(), Toast.LENGTH_LONG).show();
-                   }else{
-                       Toast.makeText(CarSetupActivity.this, "Unable to process request!", Toast.LENGTH_LONG).show();
-                       Log.e(Constants.LOG_TAG, this.getClass() + " : " + "ResponseBean " + responseBean);
-                   }
-                }
-
-            };
-
-        }catch(Exception e){
-            e.printStackTrace();
+                    Intent intent = new Intent(getApplicationContext(), MainActivity.class);
+                    startActivity(intent);
+                    finish();
+                } else
+                    Toast.makeText(CarSetupActivity.this, responseBean.getErrorDescription(), Toast.LENGTH_LONG).show();
+            } else {
+                Toast.makeText(CarSetupActivity.this, "Unable to process request!", Toast.LENGTH_LONG).show();
+                Log.e(Constants.LOG_TAG, this.getClass() + " : " + "ResponseBean " + responseBean);
+            }
         }
 
     }
 
-    public void onBackPressed() {
+    ;
 
-    }
 }
 

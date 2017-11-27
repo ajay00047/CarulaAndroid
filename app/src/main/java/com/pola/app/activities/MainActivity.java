@@ -36,11 +36,13 @@ public class MainActivity extends AppCompatActivity {
         if ((bean = dbHelper.getUserDetails()) != null) {
             Log.e(Constants.LOG_TAG, this.getClass() + " : users table has user entry for : " + bean.getFullName());
             Intent intent = new Intent(getApplicationContext(), LandingPageActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(intent);
             finish();
         }else{
             Log.e(Constants.LOG_TAG, this.getClass() + " : users table cleared ");
             Intent intent = new Intent(getApplicationContext(), LoginActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(intent);
             finish();
         }

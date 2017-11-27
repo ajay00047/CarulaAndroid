@@ -20,6 +20,7 @@ import com.pola.app.Utils.ErrorCodes;
 import com.pola.app.Utils.Singleton;
 import com.pola.app.beans.GenericErrorResponseBean;
 import com.pola.app.beans.GenericResponseBean;
+import com.pola.app.beans.LoginRequestBean;
 import com.pola.app.beans.VerifyOTPRequestBean;
 import com.pola.app.beans.VerifyOTPResponseDataBean;
 import com.pola.app.services.HttpService;
@@ -29,76 +30,108 @@ import com.pola.app.services.HttpService;
  */
 public class VerifyOTPActivity extends AppCompatActivity {
 
+    //beans
+    LoginRequestBean requestLoginBean;
+    VerifyOTPRequestBean requestBean;
+    GenericResponseBean responseBean;
+    //variables
+    String otp = "";
     // UI references
     private EditText xmlOTP;
     private Button xmlSubmit;
     private Button xmlResendOTP;
     private ProgressDialog loader;
-    AsyncTask<Void, Void, Void> task;
-
-    //beans
-    VerifyOTPRequestBean requestBean;
-    GenericResponseBean responseBean;
     private DBHelper dbHelper;
-
-    //variables
-    String otp = "";
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_verify_otp);
-        try{
-        //Set up request bean
-        requestBean = new VerifyOTPRequestBean(getApplicationContext());
+        try {
+            //Set up request bean
+            requestBean = new VerifyOTPRequestBean(getApplicationContext());
+            requestLoginBean = new LoginRequestBean(getApplicationContext());
 
-        // Set up the login form.
-        xmlOTP = (EditText) findViewById(R.id.otp);
-        xmlSubmit = (Button) findViewById(R.id.button_submit_otp);
-        xmlResendOTP = (Button) findViewById(R.id.button_resubmit_otp);
+            // Set up the login form.
+            xmlOTP = (EditText) findViewById(R.id.otp);
+            xmlSubmit = (Button) findViewById(R.id.button_submit_otp);
+            xmlResendOTP = (Button) findViewById(R.id.button_resubmit_otp);
 
-        //setup DBHelper
-        dbHelper = new DBHelper(this);
+            //setup DBHelper
+            dbHelper = new DBHelper(this);
 
-        //Listeners
+            //Listeners
             xmlSubmit.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
+                @Override
+                public void onClick(View v) {
 
-                loader = new ProgressDialog(VerifyOTPActivity.this);
-                loader.setMessage("verifying otp...");
-                loader.setIndeterminate(true);
-                loader.setCancelable(false);
+                    loader = new ProgressDialog(VerifyOTPActivity.this);
+                    loader.setMessage("verifying otp...");
+                    loader.setIndeterminate(true);
+                    loader.setCancelable(false);
 
-                otp = xmlOTP.getText().toString();
-                if(!otp.matches(Constants.REGEX_OTP)) {
-                    Toast.makeText(VerifyOTPActivity.this, "Wrong OTP!", Toast.LENGTH_LONG).show();
-                }else {
-                    try{
+                    otp = xmlOTP.getText().toString();
+                    if (!otp.matches(Constants.REGEX_OTP)) {
+                        Toast.makeText(VerifyOTPActivity.this, "Wrong OTP!", Toast.LENGTH_LONG).show();
+                    } else {
+                        try {
+                            loader.show();
+                            requestBean.setOtp(otp);
+                            requestBean.setMobile(Singleton.userBean.getMobile());
+                            new VerifyOtpTask().execute(null, null, null);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+                }
+            });
+
+            //Listeners
+            xmlResendOTP.setOnClickListener(new OnClickListener() {
+                @Override
+                public void onClick(View v) {
+
+                    loader = new ProgressDialog(VerifyOTPActivity.this);
+                    loader.setMessage("resending otp...");
+                    loader.setIndeterminate(true);
+                    loader.setCancelable(false);
+
+                    try {
                         loader.show();
-                        requestBean.setOtp(otp);
-                        requestBean.setMobile(Singleton.userBean.getMobile());
-                        task.execute(null, null, null);
-                    }catch(Exception e){
+                        requestLoginBean.setMobile(Singleton.userBean.getMobile());
+                        new LoginTask().execute(null, null, null);
+                    } catch (Exception e) {
                         e.printStackTrace();
                     }
+
+
                 }
+            });
 
-            }
-        });
 
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    public void onBackPressed() {
+
+    }
+
+    ;
 
     /**
      * Call webservice and check for login
      */
-    task = new AsyncTask<Void, Void, Void>() {
+    private class VerifyOtpTask extends AsyncTask<Void, Void, Void> {
 
         @Override
         protected Void doInBackground(Void... params) {
 
             try {
-                responseBean = HttpService.getResponse(API.verifyOTPUrl,requestBean,VerifyOTPActivity.this);
+                responseBean = HttpService.getResponse(API.verifyOTPUrl, requestBean, VerifyOTPActivity.this);
                 loader.dismiss();
             } catch (Exception e) {
                 e.printStackTrace();
@@ -109,45 +142,87 @@ public class VerifyOTPActivity extends AppCompatActivity {
 
         @Override
         protected void onPostExecute(Void result) {
-           if(null != responseBean && responseBean.getStatus() ==1) {
-               if (((VerifyOTPResponseDataBean) responseBean.getDataBean()).getErrorCode().equals(ErrorCodes.CODE_704)) {
-                   Toast.makeText(VerifyOTPActivity.this, ((VerifyOTPResponseDataBean) responseBean.getDataBean()).errorMessage, Toast.LENGTH_LONG).show();
+            if (null != responseBean && responseBean.getStatus() == 1) {
+                if (((VerifyOTPResponseDataBean) responseBean.getDataBean()).getErrorCode().equals(ErrorCodes.CODE_704)) {
+                    Toast.makeText(VerifyOTPActivity.this, ((VerifyOTPResponseDataBean) responseBean.getDataBean()).errorMessage, Toast.LENGTH_LONG).show();
 
                     dbHelper.insertUser((VerifyOTPResponseDataBean) responseBean.getDataBean());
 
-                   Intent intent = new Intent(getApplicationContext(), LandingPageActivity.class);
-                   startActivity(intent);
-                   finish();
-               } else {
-                   Toast.makeText(VerifyOTPActivity.this, ((VerifyOTPResponseDataBean) responseBean.getDataBean()).errorMessage, Toast.LENGTH_LONG).show();
-               }
-           }else if(null != responseBean && responseBean.getStatus() ==0) {
-               if (responseBean.getErrorCode().equals(ErrorCodes.CODE_888.toString())) {
-                   Toast.makeText(VerifyOTPActivity.this,ErrorCodes.CODE_888.getErrorMessage(), Toast.LENGTH_LONG).show();
+                    Intent intent = new Intent(getApplicationContext(), LandingPageActivity.class);
+                    startActivity(intent);
+                    finish();
+                } else {
+                    Toast.makeText(VerifyOTPActivity.this, ((VerifyOTPResponseDataBean) responseBean.getDataBean()).errorMessage, Toast.LENGTH_LONG).show();
+                }
+            } else if (null != responseBean && responseBean.getStatus() == 0) {
+                if (responseBean.getErrorCode().equals(ErrorCodes.CODE_888.toString())) {
+                    Toast.makeText(VerifyOTPActivity.this, ErrorCodes.CODE_888.getErrorMessage(), Toast.LENGTH_LONG).show();
 
-                   //clear all database
-                   dbHelper.clearUsersTable();
+                    //clear all database
+                    dbHelper.clearUsersTable();
 
-                   Intent intent = new Intent(getApplicationContext(), MainActivity.class);
-                   startActivity(intent);
-                   finish();
-               }else
-                   Toast.makeText(VerifyOTPActivity.this, responseBean.getErrorDescription(), Toast.LENGTH_LONG).show();
-           }else{
-               Toast.makeText(VerifyOTPActivity.this, "Unable to process request!", Toast.LENGTH_LONG).show();
-               Log.e(Constants.LOG_TAG, this.getClass() + " : " + "ResponseBean " + responseBean);
-           }
-        }
-
-    };
-
-        }catch(Exception e){
-            e.printStackTrace();
+                    Intent intent = new Intent(getApplicationContext(), MainActivity.class);
+                    startActivity(intent);
+                    finish();
+                } else
+                    Toast.makeText(VerifyOTPActivity.this, responseBean.getErrorDescription(), Toast.LENGTH_LONG).show();
+            } else {
+                Toast.makeText(VerifyOTPActivity.this, "Unable to process request!", Toast.LENGTH_LONG).show();
+                Log.e(Constants.LOG_TAG, this.getClass() + " : " + "ResponseBean " + responseBean);
+            }
         }
 
     }
 
-    public void onBackPressed() {
+    ;
+
+    /**
+     * Call webservice and check for login
+     */
+    private class LoginTask extends AsyncTask<Void, Void, Void> {
+        @Override
+        protected Void doInBackground(Void... params) {
+
+            try {
+                responseBean = HttpService.getResponse(API.loginUrl, requestLoginBean, VerifyOTPActivity.this);
+                loader.dismiss();
+            } catch (Exception e) {
+                e.printStackTrace();
+                loader.dismiss();
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void result) {
+            if (null != responseBean && responseBean.getStatus() == 1) {
+
+                Log.e(Constants.LOG_TAG, this.getClass() + " : " + "Error Code : " + ((GenericErrorResponseBean) responseBean.getDataBean()).getErrorCode());
+
+                if (((GenericErrorResponseBean) responseBean.getDataBean()).getErrorCode().equals(ErrorCodes.CODE_703)) {
+                    Toast.makeText(VerifyOTPActivity.this, ((GenericErrorResponseBean) responseBean.getDataBean()).errorMessage, Toast.LENGTH_LONG).show();
+                } else if (((GenericErrorResponseBean) responseBean.getDataBean()).getErrorCode().equals(ErrorCodes.CODE_701)) {
+                    Toast.makeText(VerifyOTPActivity.this, ((GenericErrorResponseBean) responseBean.getDataBean()).errorMessage, Toast.LENGTH_LONG).show();
+
+                } else
+                    Toast.makeText(VerifyOTPActivity.this, ((GenericErrorResponseBean) responseBean.getDataBean()).errorMessage, Toast.LENGTH_LONG).show();
+            } else if (null != responseBean && responseBean.getStatus() == 0) {
+                if (responseBean.getErrorCode().equals(ErrorCodes.CODE_888.toString())) {
+                    Toast.makeText(VerifyOTPActivity.this, ErrorCodes.CODE_888.getErrorMessage(), Toast.LENGTH_LONG).show();
+
+                    //clear all database
+                    dbHelper.clearUsersTable();
+
+                    Intent intent = new Intent(getApplicationContext(), MainActivity.class);
+                    startActivity(intent);
+                    finish();
+                } else
+                    Toast.makeText(VerifyOTPActivity.this, responseBean.getErrorDescription(), Toast.LENGTH_LONG).show();
+            } else {
+                Toast.makeText(VerifyOTPActivity.this, "Unable to process request!", Toast.LENGTH_LONG).show();
+                Log.e(Constants.LOG_TAG, this.getClass() + " : " + "ResponseBean " + responseBean);
+            }
+        }
 
     }
 }
